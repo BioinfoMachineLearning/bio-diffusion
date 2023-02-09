@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - datamodule: edm_qm9.yaml
+  - model: qm9_mol_gen_ddpm.yaml
+  - logger: null
+  - trainer: default.yaml
+  - paths: default.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+task_name: "mol_gen_sample"
+
+tags: ["dev"]
+
+# passing checkpoint path is necessary for sampling
+ckpt_path: ???
+
+# inference (i.e., sampling) arguments
+output_dir: ""
+num_samples: ???
+num_nodes: 19
+all_frags: true
+sanitize: false
+relax: false
+num_resamplings: 1
+jump_length: 1
+num_timesteps: ???

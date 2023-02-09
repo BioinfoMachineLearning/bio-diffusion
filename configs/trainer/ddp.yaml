@@ -1,0 +1,9 @@
+defaults:
+  - default.yaml
+
+strategy: ddp_find_unused_parameters_false
+
+accelerator: gpu
+devices: 3
+num_nodes: 1
+sync_batchnorm: True

@@ -1,0 +1,21 @@
+ddpm_mode: unconditional  # [unconditional, conditional, simple_conditional]
+dynamics_network: gcpnet  # [gcpnet, egnn]
+diffusion_target: "atom_types_and_coords"  # [atom_types_and_coords]
+num_timesteps: 1000
+parametrization: "eps"  # [eps]
+noise_schedule: "polynomial_2"  # [cosine, polynomial_n, learned]
+noise_precision: 1e-5
+loss_type: "l2"  # [l2, vlb]
+norm_values: [1.0, 4.0, 10.0]  # [normalization_value_for_x, normalization_value_for_h_categorical, normalization_value_for_h_integer]
+norm_biases: [null, 0.0, 0.0]
+condition_on_time: true
+self_condition: false
+norm_training_by_max_nodes: false
+sample_during_training: true
+eval_epochs: 20
+visualize_sample_epochs: ${.eval_epochs}
+visualize_chain_epochs: ${.eval_epochs}
+num_eval_samples: 1000
+eval_batch_size: 100
+num_visualization_samples: 5
+keep_frames: 100

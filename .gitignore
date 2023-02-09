@@ -102,7 +102,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
@@ -127,3 +126,54 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+### VisualStudioCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+**/.vscode
+
+# JetBrains
+.idea/
+
+# Data & Models
+*.h5
+*.tar
+*.tar.gz
+
+# Bio-Diffusion
+.env
+.autoenv
+.hydra
+*.dot
+*.pdf
+fit-perf_logs.txt
+*.sdf
+checkpoints/GEOM/*
+checkpoints/QM9/*
+configs/local/*.yaml
+scripts/*_grid_search_runs.json
+scripts/*_grid_search_scripts*/gpu_job_*.yaml
+scripts/*_grid_search_scripts*/train_*.bash
+scripts/*_grid_search_scripts*/*.out
+scripts/*_grid_search_scripts*/*.done
+scripts/local/*.bash
+scripts/nautilus/data_transfer_pod_pvc.yaml
+scripts/nautilus/gpu_job.yaml
+scripts/nautilus/hm_gpu_job.yaml
+scripts/nautilus/persistent_storage.yaml
+
+bio-diffusion/
+logs/
+
+data/EDM/GEOM
+data/EDM/QM9
+
+# NFS
+.nfs*
+
+# Git
+.git-credentials

@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - datamodule: edm_qm9.yaml # choose datamodule with `val_dataloader()` and `test_dataloader()` for evaluation
+  - model: qm9_mol_gen_ddpm.yaml
+  - callbacks: default.yaml
+  - logger: null
+  - trainer: default.yaml
+  - paths: default.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+task_name: "eval"
+
+tags: ["dev"]
+
+# passing checkpoint path is necessary for sampling and evaluation
+ckpt_path: ???
+
+# inference (i.e., sampling) and evaluation arguments
+num_samples: 10000
+sampling_batch_size: 100
+num_test_passes: 5

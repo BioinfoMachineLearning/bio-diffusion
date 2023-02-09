@@ -1,0 +1,17 @@
+# ignore the checkpoints directory
+checkpoints/
+
+# ignore the data directory
+data/
+
+# ignore the logs directory
+logs/
+
+# ignore the git directory
+.git
+
+# ignore generated YAML files
+scripts/nautilus/data_transfer_pod_pvc.yaml
+scripts/nautilus/gpu_job.yaml
+scripts/nautilus/hm_gpu_job.yaml
+scripts/nautilus/persistent_storage.yaml

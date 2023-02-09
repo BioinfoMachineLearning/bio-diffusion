@@ -1,0 +1,21 @@
+_target_: src.models.geom_mol_gen_ddpm.GEOMMoleculeGenerationDDPM
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 1e-4
+  weight_decay: 1e-12
+  amsgrad: true
+
+scheduler:  # note: leaving `scheduler` empty will result in a learning-rate scheduler not being used
+  # _target_: torch.optim.lr_scheduler.StepLR
+  # _partial_: true
+  # step_size: ${...trainer.min_epochs} // 8  # note: using literal evalution manually until Hydra natively supports this functionality
+  # gamma: 0.9
+  # last_epoch: -1
+
+defaults:
+  - model_cfg: geom_mol_gen_ddpm_gcp_model.yaml
+  - module_cfg: geom_mol_gen_ddpm_gcp_module.yaml
+  - layer_cfg: geom_mol_gen_ddpm_gcp_interaction_layer.yaml
+  - diffusion_cfg: geom_mol_gen_ddpm.yaml

@@ -1,0 +1,126 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=geom_mol_gen_ddpm_ablations
+
+defaults:
+  - override /datamodule: edm_geom.yaml
+  - override /model: geom_mol_gen_ddpm.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: default.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["molecule_generation", "geom", "ablations"]
+
+seed: 42
+
+callbacks:
+  model_checkpoint:
+    monitor: "val/loss"
+    save_top_k: 3
+  early_stopping:
+    monitor: "val/loss"
+
+trainer:
+  min_epochs: 5
+  max_epochs: 3000
+  strategy: ddp_find_unused_parameters_false
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  accumulate_grad_batches: 1
+
+model:
+  optimizer:
+    lr: 1e-4
+    weight_decay: 1e-12
+  
+  model_cfg:
+    h_hidden_dim: 256
+    chi_hidden_dim: 32
+    e_hidden_dim: 16
+    xi_hidden_dim: 8
+
+    num_encoder_layers: 4
+    num_decoder_layers: 3
+    dropout: 0.0
+
+  module_cfg:
+    selected_GCP:
+      # which version of the GCP module to use (e.g., GCP or GCP2)
+      _target_: src.models.components.gcpnet.GCP2
+      _partial_: true
+
+    norm_x_diff: true
+
+    scalar_gate: 0
+    vector_gate: true  # note: For both GCP and GCP2, this parameter is used;   For GCP2, this mimics updating vector features without directly using frame vectors
+    vector_residual: false  # note: For both GCP and GCP2, this parameter is used
+    vector_frame_residual: false  # note: for GCP2, this parameter is unused
+    frame_gate: false  # note: for GCP2, if this parameter and `vector_gate` are both set to `false`, row-wise vector self-gating is applied instead
+    sigma_frame_gate: false  # note: For GCP, this parameter overrides `frame_gate`;   For GCP2, this parameter is unused and is replaced in functionality by `vector_gate`
+
+    scalar_nonlinearity: silu
+    vector_nonlinearity: silu
+
+    nonlinearities:
+      - ${..scalar_nonlinearity}
+      - ${..vector_nonlinearity}
+
+    bottleneck: 4
+
+    vector_linear: true
+    vector_identity: true
+
+    default_vector_residual: false
+    default_bottleneck: 4
+
+    node_positions_weight: 1.0
+    update_positions_with_vector_sum: false
+
+    ablate_frame_updates: true
+    ablate_scalars: true
+    ablate_vectors: true
+
+    clip_gradients: true
+
+  layer_cfg:
+    mp_cfg:
+      edge_encoder: false
+      edge_gate: false
+      num_message_layers: 4
+      message_residual: 0
+      message_ff_multiplier: 1
+      self_message: true
+      use_residual_message_gcp: true
+
+    pre_norm: false
+    use_gcp_norm: false
+    use_gcp_dropout: false
+    use_scalar_message_attention: true
+    num_feedforward_layers: 1
+    dropout: 0.0
+
+    nonlinearity_slope: 1e-2
+
+  diffusion_cfg:
+    ddpm_mode: unconditional
+    dynamics_network: gcpnet
+    num_timesteps: 1000
+    norm_training_by_max_nodes: false
+
+datamodule:
+  dataloader_cfg:
+    num_train: -1
+    num_val: -1
+    num_test: -1
+    batch_size: 64
+    num_workers: 4
+
+logger:
+  wandb:
+    name: 02092023_GEOMMoleculeGenerationDDPM_Ablations
+    group: "GEOM"
+    tags: ${tags}

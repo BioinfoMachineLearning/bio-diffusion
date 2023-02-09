@@ -1,0 +1,36 @@
+_target_: pytorch_lightning.Trainer
+
+default_root_dir: ${paths.output_dir}
+
+min_epochs: 5  # prevents early stopping
+max_epochs: 3000
+
+strategy: ddp_find_unused_parameters_false
+
+accelerator: gpu
+devices: 1
+num_nodes: 1
+sync_batchnorm: True
+
+# mixed precision for extra speed-up
+# precision: 16
+
+# number of sanity-check validation forward passes to run prior to model training
+num_sanity_val_steps: 0
+
+# perform a validation loop every N training epochs
+check_val_every_n_epoch: ${model.diffusion_cfg.eval_epochs}
+
+# gradient accumulation to simulate larger-than-GPU-memory batch sizes
+accumulate_grad_batches: 1
+
+# set True to ensure deterministic results
+# makes training slower but gives more reproducibility than just setting seeds
+deterministic: False
+
+# track and log the vector norm of each gradient
+# track_grad_norm: 2.0
+
+# profile code comprehensively
+profiler:
+  # _target_: pytorch_lightning.profilers.PyTorchProfiler

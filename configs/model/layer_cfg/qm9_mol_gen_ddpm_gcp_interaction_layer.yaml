@@ -1,0 +1,11 @@
+defaults:
+  - mp_cfg: qm9_mol_gen_ddpm_gcp_mp.yaml
+
+pre_norm: false
+use_gcp_norm: false
+use_gcp_dropout: false
+use_scalar_message_attention: true
+num_feedforward_layers: 1
+dropout: 0.0
+
+nonlinearity_slope: 1e-2

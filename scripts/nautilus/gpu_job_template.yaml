@@ -1,0 +1,101 @@
+# batch/v1 tells it to use the JOB API
+apiVersion: batch/v1
+# we are running a Job, not a Pod
+kind: Job
+
+# set the name of the job
+metadata:
+  name: train-test-bio-diffusion$JOB_INDEX
+
+spec:
+  # how many times should the system
+  # retry before calling it a failure
+  backoffLimit: 0
+  template:
+    spec:
+      # should we restart on failure
+      restartPolicy: Never
+      # what containers will we need
+      containers:
+        # the name of the container
+        - name: bio-diffusion
+          # the image: can be from any public facing registry such as your GitLab repository's container registry
+          image: gitlab-registry.nrp-nautilus.io/bioinfomachinelearning/bio-diffusion:$IMAGE_TAG # replace `IMAGE_TAG` with tag for container of interest
+          # the working dir when the container starts
+          workingDir: /data/Repositories/Lab_Repositories/bio-diffusion
+          # whether Kube should pull it
+          imagePullPolicy: IfNotPresent
+          # we need to expose the port
+          # that will be used for DDP
+          ports:
+            - containerPort: 8880
+          # setting of env variables
+          env:
+            # which interface to use
+            - name: NCCL_SOCKET_IFNAME
+              value: eth0
+            # note: prints some INFO level
+            # NCCL logs
+            - name: NCCL_DEBUG
+              value: INFO
+          # the command to run when the container starts
+          command:
+            [
+              "bash",
+              "-c",
+              "cd /data/Repositories/Lab_Repositories/bio-diffusion && git pull origin main && /data/Repositories/Lab_Repositories/bio-diffusion/bio-diffusion/bin/python src/train.py logger=wandb experiment=$EXPERIMENT",
+            ]
+          # define the resources for this container
+          resources:
+            # limits - the max given to the container
+            limits:
+              # RAM
+              memory: 14Gi
+              # cores
+              cpu: 2
+              # NVIDIA GPUs
+              nvidia.com/gpu: 1
+            # requests - what we'd like
+            requests:
+              # RAM
+              memory: 12Gi
+              # CPU Cores
+              cpu: 2
+              # GPUs
+              nvidia.com/gpu: 1
+          # what volumes we should mount
+          volumeMounts:
+            # note: my datasets PVC should mount to /data
+            - mountPath: /data
+              name: $USER-bio-diffusion-pvc # REPLACE $USER with your Nautilus username
+            # IMPORTANT: we need SHM for DDP
+            - mountPath: /dev/shm
+              name: dshm
+      # tell Kube where to find credentials with which to pull GitLab Docker containers
+      imagePullSecrets:
+        - name: regcred-bio-diffusion
+      # tell Kube where to find the volumes we want to use
+      volumes:
+        # which PVC is my data
+        - name: $USER-bio-diffusion-pvc # REPLACE $USER with your Nautilus username
+          persistentVolumeClaim:
+            claimName: $USER-bio-diffusion-pvc # REPLACE $USER with your Nautilus username
+        # setup shared memory as a RAM volume
+        - name: dshm
+          emptyDir:
+            medium: Memory
+      # tell Kube what type of GPUs we want
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values:
+                      # note: here, we are asking for 24GB GPUs only
+                      - NVIDIA-A10
+                      - NVIDIA-GeForce-RTX-3090
+                      - NVIDIA-TITAN-RTX
+                      - NVIDIA-RTX-A5000
+                      - Quadro-RTX-6000

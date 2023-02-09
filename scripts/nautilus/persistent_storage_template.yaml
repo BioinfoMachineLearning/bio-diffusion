@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: $USER-bio-diffusion-pvc # REPLACE $USER with your Nautilus username
+spec:
+  storageClassName: rook-cephfs-central
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1000Gi

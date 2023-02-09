@@ -1,0 +1,41 @@
+selected_GCP:
+  # which version of the GCP module to use (e.g., GCP or GCP2)
+  _target_: src.models.components.gcpnet.GCP2
+  _partial_: true
+
+norm_x_diff: true
+
+scalar_gate: 0
+vector_gate: true  # note: For both GCP and GCP2, this parameter is used;   For GCP2, this mimics updating vector features without directly using frame vectors
+vector_residual: false  # note: For both GCP and GCP2, this parameter is used
+vector_frame_residual: false  # note: for GCP2, this parameter is unused
+frame_gate: false  # note: for GCP2, if this parameter and `vector_gate` are both set to `false`, row-wise vector self-gating is applied instead
+sigma_frame_gate: false  # note: For GCP, this parameter overrides `frame_gate`;   For GCP2, this parameter is unused and is replaced in functionality by `vector_gate`
+
+scalar_nonlinearity: silu
+vector_nonlinearity: silu
+
+nonlinearities:
+  - ${..scalar_nonlinearity}
+  - ${..vector_nonlinearity}
+
+bottleneck: 4
+
+vector_linear: true
+vector_identity: true
+
+default_vector_residual: false
+default_bottleneck: 4
+
+node_positions_weight: 1.0
+update_positions_with_vector_sum: false
+
+ablate_frame_updates: false
+ablate_scalars: false
+ablate_vectors: false
+
+conditioning: []    # note: multiple arguments can be passed here including: homo | onehot | lumo | num_atoms | etc.
+                    # usage: `conditioning: [H_thermo, homo]`)
+
+clip_gradients: true
+log_grad_flow_steps: 500  # after how many steps to log gradient flow

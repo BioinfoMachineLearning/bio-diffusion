@@ -1,0 +1,12 @@
+chi_input_dim: 2
+e_input_dim: 1
+xi_input_dim: 1
+
+h_hidden_dim: 256
+chi_hidden_dim: 32
+e_hidden_dim: 64
+xi_hidden_dim: 16
+
+num_encoder_layers: 9
+num_decoder_layers: 3
+dropout: 0.0
