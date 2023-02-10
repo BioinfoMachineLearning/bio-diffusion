@@ -673,7 +673,8 @@ class EGNNDynamics(nn.Module):
         batch: Batch,
         xh: TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"],
         t: TensorType["batch_num_nodes", 1],
-        xh_self_cond: Optional[TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]] = None
+        xh_self_cond: Optional[TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]] = None,
+        **kwargs: Any
     ) -> Tuple[
         Batch,
         TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]

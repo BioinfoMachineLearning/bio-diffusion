@@ -1,6 +1,6 @@
 # path to root directory
 # this requires PROJECT_ROOT environment variable to exist
-# PROJECT_ROOT is inferred and set by pyrootutils package in `train.py`, `eval.py`, `mol_gen_sample.py`, `struct_gen_sample.py`
+# PROJECT_ROOT is inferred and set by pyrootutils package in `train.py`, `eval.py`, `mol_gen_sample.py`
 root_dir: ${oc.env:PROJECT_ROOT}
 
 # path to data directory
