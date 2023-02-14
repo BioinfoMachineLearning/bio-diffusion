@@ -60,11 +60,7 @@ class EDMDataModule(LightningDataModule):
         """
         # load dataloaders only if not loaded already
         if not self.dataloader_train and not self.dataloader_val and not self.dataloader_test:
-            self.dataloaders, self.charge_scale = retrieve_dataloaders(
-                self.hparams.dataloader_cfg,
-                esm_model=getattr(self, "esm_model", None),
-                esm_batch_converter=getattr(self, "esm_batch_converter", None)
-            )
+            self.dataloaders, self.charge_scale = retrieve_dataloaders(self.hparams.dataloader_cfg)
             self.dataloader_train, self.dataloader_val, self.dataloader_test = (
                 self.dataloaders["train"], self.dataloaders["valid"], self.dataloaders["test"]
             )

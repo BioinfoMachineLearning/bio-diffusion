@@ -34,11 +34,7 @@ def set_worker_sharing_strategy(worker_id: int):
     torch.multiprocessing.set_sharing_strategy(SHARING_STRATEGY)
 
 
-def retrieve_dataloaders(
-    dataloader_cfg: DictConfig,
-    esm_model: Optional[nn.Module] = None,
-    esm_batch_converter: Optional[nn.Module] = None
-):
+def retrieve_dataloaders(dataloader_cfg: DictConfig):
     if "QM9" in dataloader_cfg.dataset:
         batch_size = dataloader_cfg.batch_size
         num_workers = dataloader_cfg.num_workers
