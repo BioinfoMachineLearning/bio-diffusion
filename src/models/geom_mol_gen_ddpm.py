@@ -73,7 +73,12 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
 
         # hyperparameters #
 
-        # prior to saving hyperparameters, adjust the effective number of atom types used
+        # prior to saving hyperparameters, adjust the number of evaluation samples used based on one's conditioning argument(s)
+        diffusion_cfg.num_eval_samples = (
+            diffusion_cfg.num_eval_samples // 2 if len(module_cfg.conditioning) > 0 else diffusion_cfg.num_eval_samples
+        )
+
+        # also prior to saving hyperparameters, adjust the effective number of atom types used
         dataloader_cfg.num_atom_types = (
             dataloader_cfg.num_atom_types - 1
             if dataloader_cfg.remove_h
