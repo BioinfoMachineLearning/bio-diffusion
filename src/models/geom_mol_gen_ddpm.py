@@ -23,7 +23,7 @@ import src.datamodules.components.edm.utils as qm9utils
 
 from src.models.components import centralize, num_nodes_to_batch_index, save_xyz_file, visualize_mol, visualize_mol_chain
 from src.datamodules.components.edm.rdkit_functions import BasicMolecularMetrics, build_molecule, process_molecule
-from src.datamodules.components.edm.datasets_config import GEOM_NO_H, GEOM_WITH_H, QM9_WITH_H, QM9_WITHOUT_H
+from src.datamodules.components.edm.datasets_config import GEOM_NO_H, GEOM_WITH_H, QM9_SECOND_HALF, QM9_WITH_H, QM9_WITHOUT_H
 from src.datamodules.components.edm import check_molecular_stability, get_bond_length_arrays
 from src.models.components.egnn import EGNNDynamics
 from src.models.components.variational_diffusion import EquivariantVariationalDiffusion
@@ -108,11 +108,13 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         # dataset metadata
         dataset_info_mapping = {
             "QM9": QM9_WITHOUT_H if dataloader_cfg.remove_h else QM9_WITH_H,
-            "QM9_first_half": QM9_WITHOUT_H if dataloader_cfg.remove_h else QM9_WITH_H,
-            "QM9_second_half": QM9_WITHOUT_H if dataloader_cfg.remove_h else QM9_WITH_H,
+            "QM9_second_half": None if dataloader_cfg.remove_h else QM9_SECOND_HALF,
             "GEOM": GEOM_NO_H if dataloader_cfg.remove_h else GEOM_WITH_H
         }
         self.dataset_info = dataset_info_mapping[dataloader_cfg.dataset]
+
+        if dataloader_cfg.dataset == "QM9_second_half" and dataloader_cfg.remove_h:
+            raise NotImplementedError(f"Missing config for dataset {dataloader_cfg.dataset} without hydrogen atoms")
 
         # PyTorch modules #
         dynamics_network = dynamics_networks[diffusion_cfg.dynamics_network](

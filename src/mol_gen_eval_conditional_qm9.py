@@ -190,7 +190,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         model_cfg=hydra.utils.instantiate(cfg.model.model_cfg),
         module_cfg=hydra.utils.instantiate(cfg.model.module_cfg),
         layer_cfg=hydra.utils.instantiate(cfg.model.layer_cfg),
-        diffusion_cfg=cfg.model.diffusion_cfg,
+        diffusion_cfg=hydra.utils.instantiate(cfg.model.diffusion_cfg),
         dataloader_cfg=getattr(cfg.datamodule, "dataloader_cfg", None),
         path_cfg=cfg.paths
     )
@@ -204,7 +204,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         model_cfg=hydra.utils.instantiate(cfg.model.model_cfg),
         module_cfg=hydra.utils.instantiate(cfg.model.module_cfg),
         layer_cfg=hydra.utils.instantiate(cfg.model.layer_cfg),
-        diffusion_cfg=cfg.model.diffusion_cfg,
+        diffusion_cfg=hydra.utils.instantiate(cfg.model.diffusion_cfg),
         dataloader_cfg=getattr(cfg.datamodule, "dataloader_cfg", None),
         path_cfg=cfg.paths
     )
