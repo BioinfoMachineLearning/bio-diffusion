@@ -142,13 +142,13 @@ class ProcessedDataset(Dataset):
                 included_species = included_species[1:]
 
         if subtract_thermo:
-            thermo_targets = [key.split("_")[0] for key in data.keys() if key.endswith("_thermo")]
+            thermo_targets = [key.split("_")[0] for key in self.data.keys() if key.endswith("_thermo")]
             if len(thermo_targets) == 0:
                 logging.warning("No thermochemical targets included! Try reprocessing dataset with --force-download!")
             else:
                 logging.info("Removing thermochemical energy from targets {}".format(" ".join(thermo_targets)))
             for key in thermo_targets:
-                data[key] -= data[key + "_thermo"].to(data[key].dtype)
+                self.data[key] -= self.data[key + "_thermo"].to(self.data[key].dtype)
 
         self.included_species = included_species
 
