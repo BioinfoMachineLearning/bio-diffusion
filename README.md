@@ -147,6 +147,7 @@ Bio-Diffusion builds upon the source code and data from the following projects:
 * [ClofNet](https://github.com/mouthful/ClofNet)
 * [GBPNet](https://github.com/sarpaykent/GBPNet)
 * [gvp-pytorch](https://github.com/drorlab/gvp-pytorch)
+* [GCPNet](https://github.com/BioinfoMachineLearning/GCPNet)
 * [lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template)
 * [e3_diffusion_for_molecules](https://github.com/ehoogeboom/e3_diffusion_for_molecules)
 * [DiffSBDD](https://github.com/arneschneuing/DiffSBDD)
