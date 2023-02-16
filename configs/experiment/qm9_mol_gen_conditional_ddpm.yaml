@@ -1,7 +1,7 @@
 # @package _global_
 
 # to execute this experiment run:
-# python train.py experiment=qm9_mol_gen_ddpm_ablations
+# python train.py experiment=qm9_mol_gen_ddpm
 
 defaults:
   - override /datamodule: edm_qm9.yaml
@@ -12,7 +12,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["molecule_generation", "qm9", "ablations"]
+tags: ["molecule_generation", "qm9", "conditioning"]
 
 seed: 42
 
@@ -22,9 +22,10 @@ callbacks:
     save_top_k: 3
   early_stopping:
     monitor: "val/loss"
+    patience: 12
 
 trainer:
-  min_epochs: 100
+  min_epochs: 1600
   max_epochs: 5000
   strategy: ddp_find_unused_parameters_false
   accelerator: gpu
@@ -80,9 +81,11 @@ model:
     node_positions_weight: 1.0
     update_positions_with_vector_sum: false
 
-    ablate_frame_updates: true
-    ablate_scalars: true
-    ablate_vectors: true
+    ablate_frame_updates: false
+    ablate_scalars: false
+    ablate_vectors: false
+
+    conditioning: [alpha]
 
     clip_gradients: true
 
@@ -110,6 +113,7 @@ model:
     dynamics_network: gcpnet
     num_timesteps: 1000
     norm_training_by_max_nodes: false
+    norm_values: [1.0, 8.0, 1.0]
 
 datamodule:
   dataloader_cfg:
@@ -118,9 +122,11 @@ datamodule:
     num_test: -1
     batch_size: 64
     num_workers: 4
+    include_charges: false
+    dataset: QM9_second_half
 
 logger:
   wandb:
-    name: 02092023_QM9MoleculeGenerationDDPM_Ablations
+    name: 02092023_QM9MoleculeGenerationDDPM
     group: "QM9"
     tags: ${tags}

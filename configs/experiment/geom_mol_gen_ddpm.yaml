@@ -22,9 +22,10 @@ callbacks:
     save_top_k: 3
   early_stopping:
     monitor: "val/loss"
+    patience: 10
 
 trainer:
-  min_epochs: 5
+  min_epochs: 30
   max_epochs: 3000
   strategy: ddp_find_unused_parameters_false
   accelerator: gpu

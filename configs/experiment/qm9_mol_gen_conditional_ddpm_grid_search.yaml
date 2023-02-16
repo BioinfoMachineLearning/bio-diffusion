@@ -1,18 +1,18 @@
 # @package _global_
 
 # to execute this experiment run:
-# python train.py experiment=geom_mol_gen_ddpm_ablations
+# python train.py experiment=qm9_mol_gen_ddpm
 
 defaults:
-  - override /datamodule: edm_geom.yaml
-  - override /model: geom_mol_gen_ddpm.yaml
+  - override /datamodule: edm_qm9.yaml
+  - override /model: qm9_mol_gen_ddpm.yaml
   - override /callbacks: default.yaml
   - override /trainer: default.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["molecule_generation", "geom", "ablations"]
+tags: ["molecule_generation", "qm9", "conditioning", "grid_search"]
 
 seed: 42
 
@@ -22,15 +22,19 @@ callbacks:
     save_top_k: 3
   early_stopping:
     monitor: "val/loss"
+    patience: 12
 
 trainer:
-  min_epochs: 5
-  max_epochs: 3000
+  min_epochs: 1600
+  max_epochs: 5000
   strategy: ddp_find_unused_parameters_false
   accelerator: gpu
-  devices: 1
+  devices: -1
   num_nodes: 1
   accumulate_grad_batches: 1
+
+paths:
+  grid_search_script_dir: scripts/qm9_mol_gen_ddpm_grid_search_scripts
 
 model:
   optimizer:
@@ -40,10 +44,10 @@ model:
   model_cfg:
     h_hidden_dim: 256
     chi_hidden_dim: 32
-    e_hidden_dim: 16
-    xi_hidden_dim: 8
+    e_hidden_dim: 64
+    xi_hidden_dim: 16
 
-    num_encoder_layers: 4
+    num_encoder_layers: 9
     num_decoder_layers: 3
     dropout: 0.0
 
@@ -80,9 +84,11 @@ model:
     node_positions_weight: 1.0
     update_positions_with_vector_sum: false
 
-    ablate_frame_updates: true
-    ablate_scalars: true
-    ablate_vectors: true
+    ablate_frame_updates: false
+    ablate_scalars: false
+    ablate_vectors: false
+
+    conditioning: [alpha]
 
     clip_gradients: true
 
@@ -110,6 +116,7 @@ model:
     dynamics_network: gcpnet
     num_timesteps: 1000
     norm_training_by_max_nodes: false
+    norm_values: [1.0, 8.0, 1.0]
 
 datamodule:
   dataloader_cfg:
@@ -118,9 +125,14 @@ datamodule:
     num_test: -1
     batch_size: 64
     num_workers: 4
+    include_charges: false
+    dataset: QM9_second_half
 
 logger:
   wandb:
-    name: 02092023_GEOMMoleculeGenerationDDPM_Ablations
-    group: "GEOM"
+    name: 02092023_QM9MoleculeGenerationDDPM
+    group: "QM9"
     tags: ${tags}
+
+train: true
+test: false

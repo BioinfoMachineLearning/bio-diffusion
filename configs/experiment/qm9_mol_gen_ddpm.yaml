@@ -22,6 +22,7 @@ callbacks:
     save_top_k: 3
   early_stopping:
     monitor: "val/loss"
+    patience: 10
 
 trainer:
   min_epochs: 100
