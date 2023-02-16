@@ -249,29 +249,32 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     histogram = {int(k): int(v) for k, v in dataset_info["n_nodes"].items()}
     nodes_distr = NumNodesDistribution(histogram)
 
-    conditional_diffusion_dataloader = ConditionalDiffusionDataLoader(
-        model=model,
-        nodes_distr=nodes_distr,
-        props_distr=props_distr,
-        batch_size=cfg.batch_size,
-        device=device,
-        dataset_info=dataset_info,
-        iterations=cfg.iterations
-    )
-    
-    log.info("Evaluating classifier on generator's samples!")
-    loss = test_with_property_classifier(
-        model=classifier,
-        epoch=0,
-        dataloader=conditional_diffusion_dataloader,
-        mean=mean,
-        mad=mad,
-        property=cfg.property,
-        device=device,
-        log_interval=1,
-        debug_break=cfg.debug_break
-    )
-    log.info("Classifier loss (MAE) on generator's samples: %.4f" % loss)
+    if cfg.sweep_property_values:
+        raise NotImplementedError()
+    else:
+        conditional_diffusion_dataloader = ConditionalDiffusionDataLoader(
+            model=model,
+            nodes_distr=nodes_distr,
+            props_distr=props_distr,
+            batch_size=cfg.batch_size,
+            device=device,
+            dataset_info=dataset_info,
+            iterations=cfg.iterations
+        )
+        
+        log.info("Evaluating classifier on generator's samples!")
+        loss = test_with_property_classifier(
+            model=classifier,
+            epoch=0,
+            dataloader=conditional_diffusion_dataloader,
+            mean=mean,
+            mad=mad,
+            property=cfg.property,
+            device=device,
+            log_interval=1,
+            debug_break=cfg.debug_break
+        )
+        log.info("Classifier loss (MAE) on generator's samples: %.4f" % loss)
 
     metric_dict = {}
     object_dict = {

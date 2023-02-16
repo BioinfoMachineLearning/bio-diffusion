@@ -8,7 +8,7 @@
 [![Paper](http://img.shields.io/badge/arXiv-2302.04313-B31B1B.svg)](https://arxiv.org/abs/2302.04313)
 <!-- [![Conference](http://img.shields.io/badge/AnyConference-year-4b44ce.svg)](https://papers.nips.cc/paper/2020) -->
 [![Datasets DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7542177.svg)](https://doi.org/10.5281/zenodo.7542177)
-[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7626538.svg)](https://doi.org/10.5281/zenodo.7626538)
+[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7647653.svg)](https://doi.org/10.5281/zenodo.7647653)
 
 ![Bio-Diffusion.png](./img/Bio-Diffusion.png)
 
@@ -80,7 +80,7 @@ Download checkpoints
 **Note**: Make sure to be located in the project's root directory beforehand (e.g., `~/bio-diffusion/`)
 ```bash
 # fetch and extract model checkpoints directory
-wget https://zenodo.org/record/7626538/files/GCDM_Checkpoints.tar.gz
+wget https://zenodo.org/record/7647653/files/GCDM_Checkpoints.tar.gz
 tar -xzf GCDM_Checkpoints.tar.gz
 rm GCDM_Checkpoints.tar.gz
 ```
@@ -103,41 +103,86 @@ Train model with chosen experiment configuration from [configs/experiment/](conf
 python src/train.py experiment=experiment_name.yaml
 ```
 
-Train a model for small molecule generation with the QM9 dataset (**QM9**)
+Train a model for *unconditional* small molecule generation with the QM9 dataset (**QM9**)
 
 ```bash
 python3 src/train.py experiment=qm9_mol_gen_ddpm.yaml
 ```
 
+Train a model for *property-conditional* small molecule generation with the QM9 dataset (**QM9**)
+
+```bash
+# choose a value for `model.module_cfg.conditioning` from the properties `[alpha, gap, homo, lumo, mu, Cv]`
+python3 src/train.py experiment=qm9_mol_gen_conditional_ddpm.yaml model.module_cfg.conditioning=[alpha]
+```
+
 **Note**: You can override any parameter from command line like this
 
 ```bash
-python src/train.py trainer.max_epochs=20 datamodule.batch_size=64
+python src/train.py trainer.max_epochs=20 datamodule.dataloader_cfg.batch_size=64
 ```
 
 ## How to evaluate
 
-Reproduce our results for small molecule generation with the QM9 dataset
+Reproduce our results for *unconditional* small molecule generation with the QM9 dataset
 
 ```bash
-qm9_model_1_ckpt_path="checkpoints/QM9/Unconditional/model_1_epoch_499-EMA.ckpt"
-qm9_model_2_ckpt_path="checkpoints/QM9/Unconditional/model_2_epoch_479-EMA.ckpt"
-qm9_model_3_ckpt_path="checkpoints/QM9/Unconditional/model_3_epoch_459-EMA.ckpt"
+qm9_model_1_ckpt_path="checkpoints/QM9/Unconditional/model_1_epoch_979-EMA.ckpt"
+qm9_model_2_ckpt_path="checkpoints/QM9/Unconditional/model_2_epoch_979-EMA.ckpt"
+qm9_model_3_ckpt_path="checkpoints/QM9/Unconditional/model_3_epoch_1099-EMA.ckpt"
 
 python3 src/mol_gen_eval.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 ckpt_path="$qm9_model_1_ckpt_path" datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false num_samples=10000 sampling_batch_size=100 num_test_passes=5
-
 python3 src/mol_gen_eval.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 ckpt_path="$qm9_model_2_ckpt_path" datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false num_samples=10000 sampling_batch_size=100 num_test_passes=5
-
 python3 src/mol_gen_eval.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 ckpt_path="$qm9_model_3_ckpt_path" datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false num_samples=10000 sampling_batch_size=100 num_test_passes=5
 ```
 
-## How to sample
-Generate small molecules similar to those contained within the QM9 dataset
+Reproduce our results for *property-conditional* small molecule generation with the QM9 dataset
 
 ```bash
-qm9_model_ckpt_path="checkpoints/QM9/Unconditional/model_1_epoch_499-EMA.ckpt"
+qm9_alpha_generator_model_filepath="checkpoints/QM9/Conditional/alpha_model_epoch_1619-EMA.ckpt"
+qm9_gap_generator_model_filepath="checkpoints/QM9/Conditional/gap_model_epoch_1659-EMA.ckpt"
+qm9_homo_generator_model_filepath="checkpoints/QM9/Conditional/homo_model_epoch_1879-EMA.ckpt"
+qm9_lumo_generator_model_filepath="checkpoints/QM9/Conditional/lumo_model_epoch_1619-EMA.ckpt"
+qm9_mu_generator_model_filepath="checkpoints/QM9/Conditional/mu_model_epoch_1859-EMA.ckpt"
 
-python3 src/mol_gen_sample.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 ckpt_path="$qm9_model_ckpt_path" num_samples=250 num_nodes=19 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="./"
+qm9_alpha_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_alpha"
+qm9_gap_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_gap"
+qm9_homo_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_homo"
+qm9_lumo_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_lumo"
+qm9_mu_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_mu"
+
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_alpha_generator_model_filepath" classifier_model_dir="$qm9_alpha_classifier_model_dir" property=alpha iterations=100 batch_size=100
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_gap_generator_model_filepath" classifier_model_dir="$qm9_gap_classifier_model_dir" property=gap iterations=100 batch_size=100
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_homo_generator_model_filepath" classifier_model_dir="$qm9_homo_classifier_model_dir" property=homo iterations=100 batch_size=100
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_lumo_generator_model_filepath" classifier_model_dir="$qm9_lumo_classifier_model_dir" property=lumo iterations=100 batch_size=100
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_mu_generator_model_filepath" classifier_model_dir="$qm9_mu_classifier_model_dir" property=mu iterations=100 batch_size=100
+```
+
+## How to sample
+*Unconditionally* generate small molecules similar to those contained within the QM9 dataset
+
+```bash
+qm9_model_ckpt_path="checkpoints/QM9/Unconditional/model_1_epoch_979-EMA.ckpt"
+output_dir="./"
+
+python3 src/mol_gen_sample.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 ckpt_path="$qm9_model_ckpt_path" num_samples=250 num_nodes=19 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="$output_dir"
+```
+
+*Property-conditionally* generate small molecules similar to those contained within the QM9 dataset
+
+```bash
+qm9_alpha_model_ckpt_path="checkpoints/QM9/Conditional/alpha_model_epoch_1619-EMA.ckpt"
+qm9_gap_model_ckpt_path="checkpoints/QM9/Conditional/gap_model_epoch_1659-EMA.ckpt"
+qm9_homo_model_ckpt_path="checkpoints/QM9/Conditional/homo_model_epoch_1879-EMA.ckpt"
+qm9_lumo_model_ckpt_path="checkpoints/QM9/Conditional/lumo_model_epoch_1619-EMA.ckpt"
+qm9_mu_model_ckpt_path="checkpoints/QM9/Conditional/mu_model_epoch_1859-EMA.ckpt"
+output_dir="./"
+
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_alpha_model_ckpt_path" property=alpha iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="$output_dir"
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_gap_model_ckpt_path" property=gap iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="$output_dir"
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_homo_model_ckpt_path" property=homo iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="$output_dir"
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_lumo_model_ckpt_path" property=lumo iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="$output_dir"
+python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=1 datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="$qm9_mu_model_ckpt_path" property=mu iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="$output_dir"
 ```
 
 ## Acknowledgements

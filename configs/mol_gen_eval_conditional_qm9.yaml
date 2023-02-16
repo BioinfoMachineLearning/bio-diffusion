@@ -17,8 +17,11 @@ tags: ["dev"]
 
 # inference (i.e., sampling) and evaluation arguments
 generator_model_filepath: ???
-classifier_model_dir: ???
+classifier_model_dir: ""
 property: "alpha"
 iterations: 100
 batch_size: 100
 debug_break: false
+sweep_property_values: false
+num_sweeps: 10
+output_dir: ""
