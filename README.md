@@ -153,3 +153,16 @@ Bio-Diffusion builds upon the source code and data from the following projects:
 * [DiffSBDD](https://github.com/arneschneuing/DiffSBDD)
 
 We thank all their contributors and maintainers!
+
+## Citing this work
+
+If you use the code or data associated with this package or otherwise find this work useful, please cite:
+
+```bibtex
+@article{morehead2023geometry,
+  title={Geometry-Complete Diffusion for 3D Molecule Generation},
+  author={Morehead, Alex and Cheng, Jianlin},
+  journal={arXiv preprint arXiv:2302.04313},
+  year={2023}
+}
+```
