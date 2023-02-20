@@ -5,14 +5,10 @@ From https://github.com/ehoogeboom/e3_diffusion_for_molecules/
 import torch
 import os
 
-import torch.nn as nn
 import src.datamodules.components.edm.build_geom_dataset as build_geom_dataset
 
 from omegaconf import DictConfig
 from functools import partial
-from typing import Optional
-
-from src.datamodules.components.edm import download_dataset
 
 from torch.utils.data.dataloader import DataLoader as TorchDataLoader
 from torch_geometric.loader.dataloader import DataLoader as PyGDataLoader

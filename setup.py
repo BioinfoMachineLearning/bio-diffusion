@@ -7,7 +7,7 @@ setup(
     version="0.0.1",
     description="A hub for deep diffusion networks designed to generate novel biological data",
     author="Alex Morehead",
-    author_email="alex.morehead@gmail.com",
+    author_email="acmwhb@umsystem.edu",
     url="https://github.com/BioinfoMachineLearning/bio-diffusion",
     install_requires=["pytorch-lightning", "hydra-core"],
     packages=find_packages(),
