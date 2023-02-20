@@ -25,7 +25,7 @@ callbacks:
     patience: 10
 
 trainer:
-  min_epochs: 100
+  min_epochs: 1000
   max_epochs: 5000
   strategy: ddp_find_unused_parameters_false
   accelerator: gpu
