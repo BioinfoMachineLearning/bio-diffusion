@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from functools import partial
 from matplotlib.lines import Line2D
+from omegaconf import DictConfig
 from torch.utils.data import DataLoader
 from torch.distributions.categorical import Categorical
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
@@ -17,6 +18,8 @@ from wandb.sdk.wandb_run import Run
 
 from torchtyping import TensorType, patch_typeguard
 from typeguard import typechecked
+
+from src.models.components import save_xyz_file, visualize_mol_chain
 
 patch_typeguard()  # use before @typechecked
 
@@ -192,6 +195,70 @@ def log_grad_flow_full(
                     Line2D([0], [0], color="k", lw=4)], ["max-gradient", "mean-gradient", "zero-gradient"])
 
         wandb_run.log({"Gradient flow": plt})
+
+
+@typechecked
+def sample_sweep_conditionally(
+    model: nn.Module,
+    props_distr: object,
+    num_nodes: int = 19,
+    num_frames: int = 100
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    num_nodes_ = torch.tensor([num_nodes] * num_frames, device=model.device)
+
+    context = []
+    for key in props_distr.distributions:
+        min_val, max_val = props_distr.distributions[key][num_nodes]['params']
+        mean, mad = props_distr.normalizer[key]['mean'], props_distr.normalizer[key]['mad']
+        min_val = ((min_val - mean) / (mad)).cpu().numpy()
+        max_val = ((max_val - mean) / (mad)).cpu().numpy()
+        context_row = torch.tensor(np.linspace(min_val, max_val, num_frames)).unsqueeze(1)
+        context.append(context_row)
+    context = torch.cat(context, dim=-1).float().to(model.device)
+
+    x, one_hot, charges, batch_index = model.sample(
+        num_samples=num_frames,
+        num_nodes=num_nodes_,
+        context=context,
+        fix_noise=True
+    )
+    return x, one_hot, charges, batch_index
+
+
+@typechecked
+def save_and_sample_conditionally(
+    cfg: DictConfig,
+    model: nn.Module,
+    props_distr: object,
+    dataset_info: Dict[str, Any],
+    epoch: int = 0,
+    id_from: int = 0
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    x, one_hot, charges, batch_index = sample_sweep_conditionally(
+        model=model,
+        props_distr=props_distr
+    )
+
+    save_xyz_file(
+        path=f"outputs/{cfg.experiment_name}/analysis/run{epoch}/",
+        positions=x,
+        one_hot=one_hot,
+        charges=charges,
+        dataset_info=dataset_info,
+        id_from=id_from,
+        name="conditional",
+        batch_index=batch_index
+    )
+
+    visualize_mol_chain(
+        path=f"outputs/{cfg.experiment_name}/analysis/run{epoch}/",
+        dataset_info=dataset_info,
+        wandb_run=None,
+        spheres_3d=True,
+        mode="conditional"
+    )
+
+    return x, one_hot, charges
 
 
 class NumNodesDistribution(nn.Module):

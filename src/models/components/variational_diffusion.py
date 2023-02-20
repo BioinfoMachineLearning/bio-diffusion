@@ -829,8 +829,10 @@ class EquivariantVariationalDiffusion(nn.Module):
     ) -> TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]:
         """Sample from a Normal distribution."""
         if fix_noise:
-            raise NotImplementedError("The `fix_noise` option is currently not supported.")
-        eps = self.sample_combined_position_feature_noise(batch_index, node_mask, generate_x_only=generate_x_only)
+            batch_index_ = torch.zeros_like(batch_index)  # broadcast same noise across batch
+            eps = self.sample_combined_position_feature_noise(batch_index_, node_mask, generate_x_only=generate_x_only)
+        else:
+            eps = self.sample_combined_position_feature_noise(batch_index, node_mask, generate_x_only=generate_x_only)
         return mu + sigma[batch_index] * eps
 
     @typechecked
@@ -1317,7 +1319,12 @@ class EquivariantVariationalDiffusion(nn.Module):
             context = context * node_mask.float().unsqueeze(-1)
 
         # sample from the noise distribution (i.e., p(z_T))
-        z = self.sample_combined_position_feature_noise(batch_index, node_mask, generate_x_only=generate_x_only)
+        if fix_noise:
+            batch_index_ = torch.zeros_like(batch_index)  # broadcast same noise across batch
+            z = self.sample_combined_position_feature_noise(batch_index_, node_mask, generate_x_only=generate_x_only)
+        else:
+            z = self.sample_combined_position_feature_noise(batch_index, node_mask, generate_x_only=generate_x_only)
+
         self.assert_mean_zero_with_mask(z[:, :self.num_x_dims], node_mask)
 
         # iteratively sample p(z_s | z_t) for `t = 1, ..., T`, with `s = t - 1`.

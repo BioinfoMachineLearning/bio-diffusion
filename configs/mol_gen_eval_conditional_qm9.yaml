@@ -24,4 +24,5 @@ batch_size: 100
 debug_break: false
 sweep_property_values: false
 num_sweeps: 10
+experiment_name: ${.property}-conditioning
 output_dir: ""

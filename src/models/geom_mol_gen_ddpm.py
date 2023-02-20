@@ -589,8 +589,9 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         num_nodes: Optional[TensorType["batch_size"]] = None,
         node_mask: Optional[TensorType["batch_num_nodes"]] = None,
         context: Optional[TensorType["batch_size", "num_context_features"]] = None,
+        fix_noise: bool = False,
         num_timesteps: Optional[int] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         # node count-conditioning
         if num_nodes is None:
             num_nodes = self.ddpm.num_nodes_distribution.sample(num_samples)
@@ -605,7 +606,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         context = None
 
         # sampling
-        xh, _, _ = self.ddpm.mol_gen_sample(
+        xh, batch_index, _ = self.ddpm.mol_gen_sample(
             num_samples=num_samples,
             num_nodes=num_nodes,
             node_mask=node_mask,
@@ -618,7 +619,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         one_hot = xh[:, self.num_x_dims:-1] if self.include_charges else xh[:, self.num_x_dims:]
         charges = xh[:, -1:] if self.include_charges else torch.zeros(0, device=self.device)
 
-        return x, one_hot, charges
+        return x, one_hot, charges, batch_index
 
     @torch.no_grad()
     @typechecked

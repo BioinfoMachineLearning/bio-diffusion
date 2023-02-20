@@ -17,7 +17,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 from src.datamodules.components.edm import get_bond_length_arrays
 from src.datamodules.components.edm.datasets_config import QM9_WITH_H, QM9_WITHOUT_H
-from src.models import NumNodesDistribution, PropertiesDistribution, compute_mean_mad
+from src.models import NumNodesDistribution, PropertiesDistribution, compute_mean_mad, save_and_sample_conditionally
 from src.utils.pylogger import get_pylogger
 
 from src import LR_SCHEDULER_MANUAL_INTERPOLATION_HELPER_CONFIG_ITEMS, LR_SCHEDULER_MANUAL_INTERPOLATION_PRIMARY_CONFIG_ITEMS, get_classifier, test_with_property_classifier, utils
@@ -96,7 +96,7 @@ class ConditionalDiffusionDataLoader:
     def sample(self) -> Dict[str, Any]:
         num_nodes = self.nodes_distr.sample(self.num_samples).to(self.device)
         context = self.props_distr.sample_batch(num_nodes).to(self.device)
-        x, one_hot, _ = self.model.sample(
+        x, one_hot, _, _ = self.model.sample(
             num_samples=self.num_samples,
             num_nodes=num_nodes,
             context=context
@@ -165,14 +165,12 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
 
     assert (
         os.path.exists(cfg.generator_model_filepath) and
-        os.path.exists(cfg.classifier_model_dir) and
+        (os.path.exists(cfg.classifier_model_dir) or cfg.sweep_property_values) and
         cfg.property in cfg.generator_model_filepath and
-        cfg.property in cfg.classifier_model_dir
+        (cfg.property in cfg.classifier_model_dir or cfg.sweep_property_values)
     )
 
-    log.info("Loading classifier model!")
     device = f"cuda:{cfg.trainer.devices[0]}" if torch.cuda.is_available() else "cpu"
-    classifier = get_classifier(cfg.classifier_model_dir).to(device)
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
@@ -221,8 +219,6 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             bonds[0], bonds[1], bonds[2]
         )
 
-    log.info("Creating dataloader with generator!")
-
     splits = ["train", "valid", "test"]
     dataloaders = [
         datamodule.train_dataloader(),
@@ -250,8 +246,21 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     nodes_distr = NumNodesDistribution(histogram)
 
     if cfg.sweep_property_values:
-        raise NotImplementedError()
+        log.info(f"Sampling conditionally via a sweep!")
+
+        for i in range(cfg.num_sweeps):
+            log.info(f"Sampling sweep {i + 1}/{cfg.num_sweeps}!")
+            save_and_sample_conditionally(
+                cfg=cfg,
+                model=model,
+                props_distr=props_distr,
+                dataset_info=dataset_info,
+                epoch=i,
+                id_from=0
+            )
     else:
+        log.info("Creating dataloader with generator!")
+        
         conditional_diffusion_dataloader = ConditionalDiffusionDataLoader(
             model=model,
             nodes_distr=nodes_distr,
@@ -261,6 +270,9 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             dataset_info=dataset_info,
             iterations=cfg.iterations
         )
+
+        log.info("Loading classifier model!")
+        classifier = get_classifier(cfg.classifier_model_dir).to(device)
         
         log.info("Evaluating classifier on generator's samples!")
         loss = test_with_property_classifier(
