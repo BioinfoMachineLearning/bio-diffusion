@@ -12,8 +12,6 @@ from omegaconf import DictConfig
 from functools import partial
 from typing import Optional
 
-from src.datamodules.components.edm import download_dataset
-
 from torch.utils.data.dataloader import DataLoader as TorchDataLoader
 from torch_geometric.loader.dataloader import DataLoader as PyGDataLoader
 
