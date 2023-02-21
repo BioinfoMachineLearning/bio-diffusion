@@ -14,7 +14,7 @@ from rdkit import Chem
 from typing import Any, Dict, List, Optional, Tuple
 from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule, UFFHasAllMoleculeParams
 
-from src.datamodules.components.edm import dataset, get_bond_order_batch
+from src.datamodules.components.edm import dataset, get_bond_order_batch, get_bond_length_arrays
 from src.datamodules.components.edm.datasets_config import get_dataset_info
 
 from torchtyping import TensorType, patch_typeguard
@@ -67,7 +67,7 @@ def compute_qm9_smiles(dataset_name, data_dir, remove_h):
         atom_type = torch.argmax(one_hot, dim=1).numpy()
         charges = data["charges"][0].squeeze(-1)
 
-        mol = build_molecule(torch.tensor(positions), torch.tensor(atom_type), charges, dataset_info)
+        mol = build_molecule(torch.tensor(positions), torch.tensor(atom_type), dataset_info, charges)
         mol = mol2smiles(mol)
         if mol is not None:
             mols_smiles.append(mol)
@@ -131,6 +131,10 @@ class BasicMolecularMetrics(object):
 
         # retrieve dataset smiles only for the QM9 dataset currently
         if dataset_smiles_list is None and "QM9" in dataset_info["name"]:
+            bonds = get_bond_length_arrays(self.dataset_info["atom_encoder"])
+            self.dataset_info["bonds1"], self.dataset_info["bonds2"], self.dataset_info["bonds3"] = (
+                bonds[0], bonds[1], bonds[2]
+            )
             self.dataset_smiles_list = retrieve_qm9_smiles(self.dataset_info, data_dir)
 
     @typechecked
