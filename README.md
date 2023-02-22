@@ -18,7 +18,11 @@
 
 A PyTorch hub of denoising diffusion probabilistic models designed to generate novel biological data
 
+<div align="center">
+
 ![Animation of diffusion model-generated 3D molecules visualized successively](img/GCDM_Sampled_Molecules.gif)
+
+</div>
 
 ## How to run
 
