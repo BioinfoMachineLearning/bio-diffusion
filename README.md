@@ -18,6 +18,8 @@
 
 A PyTorch hub of denoising diffusion probabilistic models designed to generate novel biological data
 
+![Animation of diffusion model-generated 3D molecules visualized successively](img/GCDM_Sampled_Molecules.gif)
+
 ## How to run
 
 Install Mamba
