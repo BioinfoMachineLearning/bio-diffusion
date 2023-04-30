@@ -1,0 +1,32 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - datamodule: edm_qm9.yaml # choose datamodule with `val_dataloader()` and `test_dataloader()` for evaluation
+  - model: qm9_mol_gen_ddpm.yaml
+  - callbacks: default.yaml
+  - logger: null
+  - trainer: default.yaml
+  - paths: default.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+task_name: "mol_gen_eval_optimization_qm9"
+
+tags: ["dev"]
+
+# inference (i.e., sampling) and evaluation arguments
+seed: 42
+unconditional_generator_model_filepath: ???
+conditional_generator_model_filepath: ???
+classifier_model_dir: ""
+sampling_output_dir: ""
+num_samples: 1000
+property: "alpha"
+iterations: 10
+num_optimization_timesteps: 100
+return_frames: 1  # note: set `return_frames > 1` to save sample 0's optimization GIF for each iteration
+debug_break: false
+experiment_name: ${.property}-optimizing
+generate_molecules_only: false
+use_pregenerated_molecules: false
