@@ -15,15 +15,15 @@ from pytorch_lightning.loggers import LightningLoggerBase
 from pytorch_lightning import Callback, LightningDataModule, LightningModule, Trainer
 from typing import List, Tuple
 
-from src.datamodules.components.edm import get_bond_length_arrays
-from src.utils.pylogger import get_pylogger
-
 root = pyrootutils.setup_root(
     search_from=__file__,
     indicator=[".git", "pyproject.toml"],
     pythonpath=True,
     dotenv=True,
 )
+
+from src.datamodules.components.edm import get_bond_length_arrays
+from src.utils.pylogger import get_pylogger
 
 from src import LR_SCHEDULER_MANUAL_INTERPOLATION_HELPER_CONFIG_ITEMS, LR_SCHEDULER_MANUAL_INTERPOLATION_PRIMARY_CONFIG_ITEMS, utils
 

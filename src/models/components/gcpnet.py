@@ -16,14 +16,15 @@ from torch_scatter import scatter
 
 from omegaconf import OmegaConf, DictConfig
 
-from torchtyping import TensorType, patch_typeguard
-from typeguard import typechecked
 from src.datamodules.components.edm_dataset import _edge_features, _node_features
 
 from src.models import get_nonlinearity
 from src.models.components import GCPDropout, GCPLayerNorm, ScalarVector, centralize, is_identity, localize, safe_norm, scalarize, vectorize
 from src.models.components.variational_diffusion import NODE_FEATURE_DIFFUSION_TARGETS
 from src.utils.pylogger import get_pylogger
+
+from torchtyping import TensorType, patch_typeguard
+from typeguard import typechecked
 
 patch_typeguard()  # use before @typechecked
 

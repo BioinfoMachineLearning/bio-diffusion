@@ -23,7 +23,7 @@ import src.datamodules.components.edm.utils as qm9utils
 
 from src.models.components import centralize, num_nodes_to_batch_index, save_xyz_file, visualize_mol, visualize_mol_chain
 from src.datamodules.components.edm.rdkit_functions import BasicMolecularMetrics, build_molecule, process_molecule
-from src.datamodules.components.edm.datasets_config import GEOM_NO_H, GEOM_WITH_H, QM9_SECOND_HALF, QM9_WITH_H, QM9_WITHOUT_H
+from src.datamodules.components.edm.datasets_config import GEOM_NO_H, GEOM_WITH_H
 from src.datamodules.components.edm import check_molecular_stability, get_bond_length_arrays
 from src.models.components.egnn import EGNNDynamics
 from src.models.components.variational_diffusion import EquivariantVariationalDiffusion
@@ -73,7 +73,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
 
         # hyperparameters #
 
-        # prior to saving hyperparameters, adjust the number of evaluation samples used based on one's conditioning argument(s)
+        # prior to saving hyperparameters, adjust number of evaluation samples based on one's conditioning argument(s)
         diffusion_cfg.num_eval_samples = (
             diffusion_cfg.num_eval_samples // 2 if len(module_cfg.conditioning) > 0 else diffusion_cfg.num_eval_samples
         )
@@ -111,15 +111,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         self.condition_on_context = len(module_cfg.conditioning) > 0
 
         # dataset metadata
-        dataset_info_mapping = {
-            "QM9": QM9_WITHOUT_H if dataloader_cfg.remove_h else QM9_WITH_H,
-            "QM9_second_half": None if dataloader_cfg.remove_h else QM9_SECOND_HALF,
-            "GEOM": GEOM_NO_H if dataloader_cfg.remove_h else GEOM_WITH_H
-        }
+        dataset_info_mapping = {"GEOM": GEOM_NO_H if dataloader_cfg.remove_h else GEOM_WITH_H}
         self.dataset_info = dataset_info_mapping[dataloader_cfg.dataset]
-
-        if dataloader_cfg.dataset == "QM9_second_half" and dataloader_cfg.remove_h:
-            raise NotImplementedError(f"Missing config for dataset {dataloader_cfg.dataset} without hydrogen atoms")
 
         # PyTorch modules #
         dynamics_network = dynamics_networks[diffusion_cfg.dynamics_network](
@@ -139,8 +132,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
 
         # distributions #
         self.node_type_distribution = CategoricalDistribution(
-            self.dataset_info['atom_types'],
-            self.dataset_info['atom_encoder']
+            self.dataset_info["atom_types"],
+            self.dataset_info["atom_encoder"]
         )
 
         # training #
@@ -219,7 +212,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         num_nodes = scatter(batch.mask.int(), batch.batch, dim=0, reduce="sum")
         batch.num_nodes_present = num_nodes
 
-        # note: `L` terms in e.g., the EDM paper represent log-likelihoods,
+        # note: `L` terms in e.g., the GCDM paper represent log-likelihoods,
         # while our loss terms are negative (!) log-likelihoods
         (
             delta_log_px, error_t, SNR_weight,
@@ -228,7 +221,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         ) = self.ddpm(batch, return_loss_info=True)
 
         # support L2 loss training step
-        if self.training and self.loss_type == 'l2':
+        if self.training and self.loss_type == "l2":
             # normalize `loss_t`
             effective_num_nodes = (
                 num_nodes.max()
@@ -344,7 +337,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             if "CUDA out of memory" not in str(e):
                 raise(e)
             torch.cuda.empty_cache()
-            log.info(f'Skipping training batch with index {batch_idx} due to OOM error...')
+            log.info(f"Skipping training batch with index {batch_idx} due to OOM error...")
             return
 
         # ensure all intermediate losses to be logged as metrics have their gradients ignored
@@ -433,7 +426,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             if "CUDA out of memory" not in str(e):
                 raise(e)
             torch.cuda.empty_cache()
-            log.info(f'Skipping validation batch with index {batch_idx} due to OOM error...')
+            log.info(f"Skipping validation batch with index {batch_idx} due to OOM error...")
             return
 
         # ensure all intermediate losses to be logged as metrics have their gradients ignored
@@ -447,8 +440,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         gamma_1 = self.ddpm.gamma(torch.ones((1, 1), device=self.device)).squeeze()
         log_SNR_max = -gamma_0
         log_SNR_min = -gamma_1
-        metrics_dict['log_SNR_max'] = log_SNR_max
-        metrics_dict['log_SNR_min'] = log_SNR_min
+        metrics_dict["log_SNR_max"] = log_SNR_max
+        metrics_dict["log_SNR_min"] = log_SNR_min
 
         # update metrics
         for metric in self.eval_metrics_to_monitor:
@@ -469,7 +462,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
     ):
         for m, value in metrics_dict.items():
             self.log(
-                f'{phase}/{m}',
+                f"{phase}/{m}",
                 value,
                 batch_size=batch_size,
                 sync_dist=sync_dist,
@@ -488,12 +481,12 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         if (self.current_epoch + 1) % self.hparams.diffusion_cfg.eval_epochs == 0:
             ticker = time()
 
-            sampler = getattr(self, 'sample_and_analyze' + suffix)
+            sampler = getattr(self, "sample_and_analyze" + suffix)
             sampling_results = sampler(
                 num_samples=self.hparams.diffusion_cfg.num_eval_samples,
                 batch_size=self.hparams.diffusion_cfg.eval_batch_size
             )
-            self.log_evaluation_metrics(sampling_results, phase='val')
+            self.log_evaluation_metrics(sampling_results, phase="val")
 
             log.info(f"validation_epoch_end(): Sampling evaluation took {time() - ticker:.2f} seconds")
 
@@ -501,13 +494,13 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             ticker = time()
             sampler = getattr(self, "sample_and_save" + suffix)
             sampler(num_samples=self.hparams.diffusion_cfg.num_visualization_samples)
-            log.info(f'validation_epoch_end(): Sampling visualization took {time() - ticker:.2f} seconds')
+            log.info(f"validation_epoch_end(): Sampling visualization took {time() - ticker:.2f} seconds")
 
         if (self.current_epoch + 1) % self.hparams.diffusion_cfg.visualize_chain_epochs == 0:
             ticker = time()
             sampler = getattr(self, "sample_chain_and_save" + suffix)
             sampler(keep_frames=self.hparams.diffusion_cfg.keep_frames)
-            log.info(f'validation_epoch_end(): Chain visualization took {time() - ticker:.2f} seconds')
+            log.info(f"validation_epoch_end(): Chain visualization took {time() - ticker:.2f} seconds")
 
     def validation_epoch_end(self, outputs: List[Any]):
         # log metrics
@@ -519,6 +512,11 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
                 torchmetric,
                 prog_bar=False
             )
+
+        # make a backup checkpoint before (potentially) sampling from the model
+        self.trainer.save_checkpoint(
+            Path(self.trainer.checkpoint_callback.dirpath) / f"model_epoch_{self.trainer.current_epoch}_validation_epoch_end.ckpt"
+        )
 
         # perform sampling evaluation on the first device (i.e., rank zero) only
         intervals = [
@@ -547,8 +545,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         gamma_1 = self.ddpm.gamma(torch.ones((1, 1), device=self.device)).squeeze()
         log_SNR_max = -gamma_0
         log_SNR_min = -gamma_1
-        metrics_dict['log_SNR_max'] = log_SNR_max
-        metrics_dict['log_SNR_min'] = log_SNR_min
+        metrics_dict["log_SNR_max"] = log_SNR_max
+        metrics_dict["log_SNR_min"] = log_SNR_min
 
         # update metrics
         for metric in self.eval_metrics_to_monitor:
@@ -581,7 +579,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
                 experiment = None
             log_grad_flow_lite(self.named_parameters(), wandb_run=experiment)
 
-    @torch.no_grad()
+    @torch.inference_mode()
     @typechecked
     def sample(
         self,
@@ -611,6 +609,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             num_nodes=num_nodes,
             node_mask=node_mask,
             context=context,
+            fix_noise=fix_noise,
+            fix_self_conditioning_noise=fix_noise,
             device=self.device,
             num_timesteps=num_timesteps
         )
@@ -621,7 +621,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
 
         return x, one_hot, charges, batch_index
 
-    @torch.no_grad()
+    @torch.inference_mode()
     @typechecked
     def sample_and_analyze(
         self,
@@ -631,7 +631,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         batch_size: Optional[int] = None,
         max_num_nodes: Optional[int] = 100
     ) -> Dict[str, Any]:
-        log.info(f'Analyzing molecule stability at epoch {self.current_epoch}...')
+        log.info(f"Analyzing molecule stability at epoch {self.current_epoch}...")
 
         max_num_nodes = (
             self.dataset_info["max_n_nodes"]
@@ -722,15 +722,15 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         validity, uniqueness, novelty = metrics[0], metrics[1], metrics[2]
 
         return {
-            'kl_div_atom_types': kl_div_atom,
-            'mol_stable': fraction_mol_stable,
-            'atm_stable': fraction_atm_stable,
-            'validity': validity,
-            'uniqueness': uniqueness,
-            'novelty': novelty
+            "kl_div_atom_types": kl_div_atom,
+            "mol_stable": fraction_mol_stable,
+            "atm_stable": fraction_atm_stable,
+            "validity": validity,
+            "uniqueness": uniqueness,
+            "novelty": novelty
         }
 
-    @torch.no_grad()
+    @torch.inference_mode()
     @typechecked
     def sample_and_save(
         self,
@@ -765,9 +765,9 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         one_hot = xh[:, self.num_x_dims:-1] if self.include_charges else xh[:, self.num_x_dims:]
         charges = xh[:, -1:] if self.include_charges else torch.zeros(0, device=self.device)
 
-        output_dir = Path(self.sampling_output_dir, f'epoch_{self.current_epoch}')
+        output_dir = Path(self.sampling_output_dir, f"epoch_{self.current_epoch}")
         save_xyz_file(
-            path=str(output_dir) + '/',
+            path=str(output_dir) + "/",
             positions=x,
             one_hot=one_hot,
             charges=charges,
@@ -856,10 +856,10 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             )
 
             if mol_stable and verbose:
-                log.info('Found stable molecule to visualize :)')
+                log.info("Found stable molecule to visualize :)")
                 break
             elif i == num_tries - 1 and verbose:
-                log.info('Did not find stable molecule :( -> showing last sample')
+                log.info("Did not find stable molecule :( -> showing last sample")
 
         # flatten (i.e., treat frame (chain dimension) as batch for visualization)
         x_flat = x.view(-1, x.size(-1))
@@ -867,7 +867,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         charges_flat = charges.view(-1, charges.size(-1)) if charges.numel() > 0 else charges
         batch_index_flat = torch.arange(x.size(0)).repeat_interleave(x.size(1))
 
-        output_dir = Path(self.sampling_output_dir, f'epoch_{self.current_epoch}', 'chain')
+        output_dir = Path(self.sampling_output_dir, f"epoch_{self.current_epoch}", "chain")
         save_xyz_file(
             path=str(output_dir),
             positions=x_flat,
@@ -982,7 +982,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
                 pass
 
             # record molecule's original center of mass
-            molecule_com_before = scatter(molecule['x'], batch_index, dim=0, reduce="mean")
+            molecule_com_before = scatter(molecule["x"], batch_index, dim=0, reduce="mean")
 
             xh = self.ddpm.inpaint(
                 molecule=molecule,
@@ -1109,6 +1109,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
                 run_id = self.logger.experiment.id
                 fit_end_indicator_filename = f"{run_id}.{HALT_FILE_EXTENSION}"
                 fit_end_indicator_filepath = os.path.join(grid_search_script_dir, fit_end_indicator_filename)
+                os.makedirs(grid_search_script_dir, exist_ok=True)
                 with open(fit_end_indicator_filepath, "w") as f:
                     f.write("`on_fit_end` has been called.")
         return super().on_fit_end()

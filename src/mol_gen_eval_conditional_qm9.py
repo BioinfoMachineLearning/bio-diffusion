@@ -14,6 +14,12 @@ from omegaconf import DictConfig
 from pytorch_lightning import LightningDataModule, LightningModule
 from typing import Any, Dict, Optional, Tuple, Union
 
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=[".git", "pyproject.toml"],
+    pythonpath=True,
+    dotenv=True,
+)
 
 from src.datamodules.components.edm import get_bond_length_arrays
 from src.datamodules.components.edm.datasets_config import QM9_WITH_H, QM9_WITHOUT_H
@@ -21,13 +27,6 @@ from src.models import NumNodesDistribution, PropertiesDistribution, compute_mea
 from src.utils.pylogger import get_pylogger
 
 from src import LR_SCHEDULER_MANUAL_INTERPOLATION_HELPER_CONFIG_ITEMS, LR_SCHEDULER_MANUAL_INTERPOLATION_PRIMARY_CONFIG_ITEMS, get_classifier, test_with_property_classifier, utils
-
-root = pyrootutils.setup_root(
-    search_from=__file__,
-    indicator=[".git", "pyproject.toml"],
-    pythonpath=True,
-    dotenv=True,
-)
 
 from typeguard import typechecked
 from torchtyping import patch_typeguard
@@ -178,9 +177,9 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
 
     log.info("Installing conditional model configuration values!")
     cfg.model.module_cfg.conditioning = [cfg.property]
+    cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
     cfg.datamodule.dataloader_cfg.include_charges = False
     cfg.datamodule.dataloader_cfg.dataset = "QM9_second_half"
-    cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
 
     log.info(f"Instantiating generator model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(
@@ -260,7 +259,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             )
     else:
         log.info("Creating dataloader with generator!")
-        
+
         conditional_diffusion_dataloader = ConditionalDiffusionDataLoader(
             model=model,
             nodes_distr=nodes_distr,

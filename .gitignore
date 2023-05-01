@@ -168,7 +168,10 @@ scripts/nautilus/persistent_storage.yaml
 
 bio-diffusion/
 logs/
+*optim_mols/
 outputs/
+epoch_*/
+.cache/
 
 data/EDM/GEOM
 data/EDM/QM9

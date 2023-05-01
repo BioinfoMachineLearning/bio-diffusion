@@ -22,10 +22,10 @@ callbacks:
     save_top_k: 3
   early_stopping:
     monitor: "val/loss"
-    patience: 10
+    patience: 20
 
 trainer:
-  min_epochs: 30
+  min_epochs: 50
   max_epochs: 3000
   strategy: ddp_find_unused_parameters_false
   accelerator: gpu
@@ -122,6 +122,6 @@ datamodule:
 
 logger:
   wandb:
-    name: 02092023_GEOMMoleculeGenerationDDPM
+    name: 04302023_GEOMMoleculeGenerationDDPM
     group: "GEOM"
     tags: ${tags}

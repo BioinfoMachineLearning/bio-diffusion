@@ -18,14 +18,15 @@ from torch_geometric.data import Batch
 
 from omegaconf import DictConfig
 
-from torchtyping import TensorType, patch_typeguard
-from typeguard import typechecked
 from src.datamodules.components.edm_dataset import _edge_features, _node_features
 
 from src.models.components import ScalarVector, centralize
 from src.models.components.gcpnet import GCPNetDynamics
 from src.models.components.variational_diffusion import NODE_FEATURE_DIFFUSION_TARGETS
 from src.utils.pylogger import get_pylogger
+
+from torchtyping import TensorType, patch_typeguard
+from typeguard import typechecked
 
 patch_typeguard()  # use before @typechecked
 

@@ -745,6 +745,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         Optional[H_INPUT_TYPE]
     ]:
         x = x * self.diffusion_cfg.norm_values[0]
+
         if generate_x_only:
             return x, None, None
 
@@ -842,12 +843,10 @@ class EquivariantVariationalDiffusion(nn.Module):
         batch_index: TensorType["batch_num_nodes"],
         node_mask: TensorType["batch_num_nodes"],
         batch_size: int,
-        t_zeros: Optional[TensorType["batch_size", 1]] = None,
         batch: Optional[Batch] = None,
         context: Optional[TensorType["batch_num_nodes", "num_context_features"]] = None,
         fix_noise: bool = False,
         generate_x_only: bool = False,
-        ablate_unnormalization: bool = False,
         xh_self_cond: Optional[TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]] = None
     ) -> Union[
         Tuple[
@@ -860,11 +859,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]
     ]:
         """Sample `x` ~ p(x | z0)."""
-        t_zeros = (
-            t_zeros
-            if t_zeros is not None
-            else torch.zeros(size=(batch_size, 1), device=batch_index.device)
-        )
+        t_zeros = torch.zeros(size=(batch_size, 1), device=batch_index.device)
         gamma_0 = self.gamma(t_zeros)
 
         # compute sqrt(`sigma_0` ^ 2 / `alpha_0` ^ 2)
@@ -893,10 +888,6 @@ class EquivariantVariationalDiffusion(nn.Module):
             fix_noise=fix_noise,
             generate_x_only=generate_x_only
         )
-
-        # bypass unnormalization during self-conditioning
-        if ablate_unnormalization:
-            return xh
 
         x = xh[:, :self.num_x_dims]
 
@@ -965,6 +956,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         self,
         batch: Batch,
         return_loss_info: bool = False,
+        self_conditioning_prob: float = 0.5,
         fix_self_conditioning_noise: bool = False,
         save_dynamics_network_graphviz_plot: bool = False
     ) -> Tuple[Any, ...]:
@@ -1024,19 +1016,26 @@ class EquivariantVariationalDiffusion(nn.Module):
 
         # self-condition the model's prediction
         self_cond = None
-        if self.training and self.diffusion_cfg.self_condition and random() < 0.5:
+        self_conditioning = (
+            self.training and self.diffusion_cfg.self_condition and not (t_int == self.T).any() and random() < self_conditioning_prob
+        )
+        if self_conditioning:
             with torch.no_grad():
-                self_cond = self.sample_p_xh_given_z0(
-                    z_0=z_t,
+                s_array_self_cond = torch.full((batch_size, 1), fill_value=0, device=t_int.device) / self.T
+                t_array_self_cond = (t_int + 1) / self.T
+                gamma_t_self_cond = inflate_batch_array(self.gamma(t_array_self_cond), batch.x)
+                z_t_self_cond, _ = self.compute_noised_representation(xh, batch_index, batch.mask, gamma_t_self_cond)
+
+                self_cond = self.sample_p_zs_given_zt(
+                    s=s_array_self_cond,
+                    t=t_array_self_cond,
+                    z=z_t_self_cond,
                     batch_index=batch_index,
                     node_mask=node_mask,
-                    batch_size=batch_size,
-                    t_zeros=t,
-                    batch=batch,
                     context=getattr(batch, "props_context", None),
                     fix_noise=fix_self_conditioning_noise,
                     generate_x_only=False,
-                    ablate_unnormalization=True
+                    self_condition=True
                 ).detach_()
 
         # make neural network prediction
@@ -1213,6 +1212,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         context: Optional[TensorType["batch_num_nodes", "num_context_features"]] = None,
         fix_noise: bool = False,
         generate_x_only: bool = False,
+        self_condition: bool = False,
         xh_self_cond: Optional[TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]] = None
     ) -> TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]:
         """Sample from `zs` ~ p(`zs` | `zt`). Only used during sampling."""
@@ -1242,8 +1242,8 @@ class EquivariantVariationalDiffusion(nn.Module):
         )
 
         # compute `mu` for p(zs | zt)
-        self.assert_mean_zero_with_mask(z[:, :self.num_x_dims], node_mask)
-        self.assert_mean_zero_with_mask(eps_t[:, :self.num_x_dims], node_mask)
+        None if self_condition else self.assert_mean_zero_with_mask(z[:, :self.num_x_dims], node_mask)
+        None if self_condition else self.assert_mean_zero_with_mask(eps_t[:, :self.num_x_dims], node_mask)
         mu = (
             z / alpha_t_given_s[batch_index] -
              (sigma2_t_given_s[batch_index] / alpha_t_given_s[batch_index] / sigma_t[batch_index]) * eps_t
@@ -1277,7 +1277,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         )
         return zs
 
-    @torch.no_grad()
+    @torch.inference_mode()
     @typechecked
     def mol_gen_sample(
         self,
@@ -1305,8 +1305,8 @@ class EquivariantVariationalDiffusion(nn.Module):
         visualization purposes.
         """
         num_timesteps = self.T if num_timesteps is None else num_timesteps
-        assert 0 < return_frames <= num_timesteps
-        assert num_timesteps % return_frames == 0
+        assert 0 < return_frames <= num_timesteps, "Number of frames cannot be greater than number of timesteps."
+        assert num_timesteps % return_frames == 0, "Number of frames must be evenly divisible by number of timesteps."
 
         # derive batch metadata
         batch_index = num_nodes_to_batch_index(num_samples, num_nodes, device=device)
@@ -1329,26 +1329,13 @@ class EquivariantVariationalDiffusion(nn.Module):
 
         # iteratively sample p(z_s | z_t) for `t = 1, ..., T`, with `s = t - 1`.
         self_cond = None
+        s_array_self_cond = torch.full((num_samples, 1), fill_value=0, device=device) / num_timesteps
         out = torch.zeros((return_frames,) + z.size(), device=device)
         for s in reversed(range(0, num_timesteps)):
             s_array = torch.full((num_samples, 1), fill_value=s, device=device)
             t_array = s_array + 1
             s_array = s_array / num_timesteps
             t_array = t_array / num_timesteps
-
-            if self.diffusion_cfg.self_condition:
-                self_cond = self.sample_p_xh_given_z0(
-                    z_0=z,
-                    batch_index=batch_index,
-                    node_mask=node_mask,
-                    batch_size=num_samples,
-                    t_zeros=s_array,
-                    context=context,
-                    fix_noise=fix_self_conditioning_noise,
-                    generate_x_only=False,
-                    ablate_unnormalization=True,
-                    xh_self_cond=self_cond
-                ).detach_()
 
             z = self.sample_p_zs_given_zt(
                 s=s_array,
@@ -1366,10 +1353,25 @@ class EquivariantVariationalDiffusion(nn.Module):
             if (s * return_frames) % num_timesteps == 0:
                 idx = (s * return_frames) // num_timesteps
                 out[idx] = self.unnormalize_z(
-                    z=self_cond if self.diffusion_cfg.self_condition else z,
+                    z=z,
                     node_mask=node_mask,
                     generate_x_only=generate_x_only
                 )
+
+            # self-condition
+            if self.diffusion_cfg.self_condition:
+                t_array_self_cond = s_array
+                self_cond = self.sample_p_zs_given_zt(
+                    s=s_array_self_cond,
+                    t=t_array_self_cond,
+                    z=z,
+                    batch_index=batch_index,
+                    node_mask=node_mask,
+                    context=context,
+                    fix_noise=fix_self_conditioning_noise,
+                    generate_x_only=False,
+                    self_condition=True
+                ).detach_()
 
         # lastly, sample p(x, h | z_0)
         x, h = self.sample_p_xh_given_z0(
@@ -1407,6 +1409,139 @@ class EquivariantVariationalDiffusion(nn.Module):
             out[0] = torch.cat([x, h["categorical"]], dim=-1)
 
         return out.squeeze(0), batch_index, node_mask
+    
+    @torch.inference_mode()
+    @typechecked
+    def mol_gen_optimize(
+        self,
+        samples: List[Tuple[torch.Tensor, torch.Tensor]],
+        num_nodes: TensorType["batch_size"],
+        device: Union[torch.device, str],
+        return_frames: int = 1,
+        num_timesteps: Optional[int] = None,
+        node_mask: Optional[TensorType["batch_num_nodes"]] = None,
+        context: Optional[TensorType["batch_size", "num_context_features"]] = None,
+        generate_x_only: bool = False
+    ) -> Tuple[
+        Union[
+            TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"],
+            TensorType["num_timesteps", "batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"]
+        ],
+        TensorType["batch_num_nodes"],
+        TensorType["batch_num_nodes"]
+    ]:
+        """
+        Optimize existing samples using the generative model.
+        Optionally, return intermediate states for
+        visualization purposes.
+        """
+        num_timesteps = self.T if num_timesteps is None else num_timesteps
+        assert 0 < return_frames <= num_timesteps, "Number of frames cannot be greater than number of timesteps."
+        assert num_timesteps % return_frames == 0, "Number of frames must be evenly divisible by number of timesteps."
+
+        # derive batch metadata
+        num_samples = len(samples)
+        batch_index = num_nodes_to_batch_index(num_samples, num_nodes, device=device)
+        # note: by default, no nodes are masked
+        node_mask = torch.ones_like(batch_index).bool() if node_mask is None else node_mask
+
+        # expand and mask context
+        if context is not None:
+            context = context[batch_index]
+            context = context * node_mask.float().unsqueeze(-1)
+
+        # combine samples into a single (normalized) feature tensor
+        x_init = torch.vstack([sample[0] for sample in samples]).to(device)
+        h_init = torch.vstack([sample[1] for sample in samples]).to(device)
+        x_init, h_init = self.normalize(
+            x=x_init,
+            h={"categorical": h_init, "integer": torch.tensor([])},
+            node_mask=node_mask,
+            generate_x_only=generate_x_only
+        )
+        z = torch.hstack((x_init, h_init["categorical"]))
+
+        self.assert_mean_zero_with_mask(z[:, :self.num_x_dims], node_mask)
+
+        # iteratively sample p(z_s | z_t) for `t = 1, ..., T`, with `s = t - 1`.
+        self_cond = None
+        s_array_self_cond = torch.full((num_samples, 1), fill_value=0, device=device) / self.T
+        out = torch.zeros((return_frames,) + z.size(), device=device)
+        for s in reversed(range(0, num_timesteps)):
+            s_array = torch.full((num_samples, 1), fill_value=s, device=device)
+            t_array = s_array + 1
+
+            # normalize current timesteps according to the model's total number of training timesteps
+            s_array = s_array / self.T
+            t_array = t_array / self.T
+
+            z = self.sample_p_zs_given_zt(
+                s=s_array,
+                t=t_array,
+                z=z,
+                batch_index=batch_index,
+                node_mask=node_mask,
+                context=context,
+                generate_x_only=generate_x_only,
+                xh_self_cond=self_cond
+            )
+
+            # save frame
+            if (s * return_frames) % num_timesteps == 0:
+                idx = (s * return_frames) // num_timesteps
+                out[idx] = self.unnormalize_z(
+                    z=z,
+                    node_mask=node_mask,
+                    generate_x_only=generate_x_only
+                )
+
+            # self-condition
+            if self.diffusion_cfg.self_condition:
+                t_array_self_cond = s_array
+                self_cond = self.sample_p_zs_given_zt(
+                    s=s_array_self_cond,
+                    t=t_array_self_cond,
+                    z=z,
+                    batch_index=batch_index,
+                    node_mask=node_mask,
+                    context=context,
+                    generate_x_only=False,
+                    self_condition=True
+                ).detach_()
+
+        # lastly, sample p(x, h | z_0)
+        x, h = self.sample_p_xh_given_z0(
+            z_0=z,
+            batch_index=batch_index,
+            node_mask=node_mask,
+            batch_size=num_samples,
+            context=context,
+            generate_x_only=generate_x_only,
+            xh_self_cond=self_cond
+        )
+
+        self.assert_mean_zero_with_mask(x, node_mask)
+
+        # correct CoG drift for examples without intermediate states
+        if return_frames == 1:
+            max_cog = scatter(x, batch_index, dim=0, reduce="sum").abs().max().item()
+            if max_cog > 5e-2:
+                log.warning(f"CoG drift with error {max_cog:.3f}. Projecting the positions down.")
+                _, x = centralize(
+                    Batch(x=x),
+                    key="x",
+                    batch_index=batch_index,
+                    node_mask=node_mask,
+                    edm=True
+                )
+
+        # overwrite last frame with the resulting `x` and `h`
+        if generate_x_only:
+            out[0] = x
+        else:
+            out[0] = torch.cat([x, h["categorical"]], dim=-1)
+
+        return out.squeeze(0), batch_index, node_mask
 
     @typechecked
     def get_repaint_schedule(
@@ -1440,7 +1575,7 @@ class EquivariantVariationalDiffusion(nn.Module):
 
         return list(reversed(repaint_schedule))
 
-    @torch.no_grad()
+    @torch.inference_mode()
     @typechecked
     def inpaint(
         self,
@@ -1466,8 +1601,8 @@ class EquivariantVariationalDiffusion(nn.Module):
         Recognition. 2022.
         """
         num_timesteps = self.T if num_timesteps is None else num_timesteps
-        assert 0 < return_frames <= num_timesteps
-        assert num_timesteps % return_frames == 0
+        assert 0 < return_frames <= num_timesteps, "Number of frames cannot be greater than number of timesteps."
+        assert num_timesteps % return_frames == 0, "Number of frames must be evenly divisible by number of timesteps."
         assert jump_length == 1 or return_frames == 1, "Chain visualization is only implemented for `jump_length=1`"
 
         # fixed hyperparameters
@@ -1510,6 +1645,7 @@ class EquivariantVariationalDiffusion(nn.Module):
         schedule = self.get_repaint_schedule(num_resamplings, jump_length, num_timesteps)
 
         self_cond = None
+        s_array_self_cond = torch.full((num_samples, 1), fill_value=0, device=z.device) / num_denoise_steps
         for i, num_denoise_steps in enumerate(schedule):
             for j in range(num_denoise_steps):
                 # denoise one time step: `t` -> `s`
@@ -1517,19 +1653,6 @@ class EquivariantVariationalDiffusion(nn.Module):
                 t_array = s_array + 1
                 s_array = s_array / num_timesteps
                 t_array = t_array / num_timesteps
-
-                if self.diffusion_cfg.self_condition:
-                    self_cond = self.sample_p_xh_given_z0(
-                        z_0=z,
-                        batch_index=molecule["batch_index"],
-                        node_mask=torch.ones_like(node_mask_fixed),
-                        batch_size=num_samples,
-                        t_zeros=s_array,
-                        context=context,
-                        generate_x_only=True,
-                        ablate_unnormalization=True,
-                        xh_self_cond=self_cond
-                    ).detach_()
 
                 # sample known nodes from the input
                 gamma_s = inflate_batch_array(self.gamma(s_array), molecule["x"])
@@ -1552,6 +1675,19 @@ class EquivariantVariationalDiffusion(nn.Module):
                     generate_x_only=generate_x_only,
                     xh_self_cond=self_cond
                 )
+
+                if self.diffusion_cfg.self_condition:
+                    t_array_self_cond = s_array
+                    self_cond = self.sample_p_zs_given_zt(
+                        s=s_array_self_cond,
+                        t=t_array_self_cond,
+                        z=z_unknown,
+                        batch_index=molecule["batch_index"],
+                        node_mask=torch.ones_like(node_mask_fixed),
+                        context=context,
+                        generate_x_only=generate_x_only,
+                        self_condition=True
+                    ).detach_()
 
                 # move center of mass of the noised part to the center of mass of the corresponding
                 # denoised part before combining them -> the resulting system should be CoM-free
@@ -1584,7 +1720,7 @@ class EquivariantVariationalDiffusion(nn.Module):
                     if (s * return_frames) % num_timesteps == 0:
                         idx = (s * return_frames) // num_timesteps
                         out[idx] = self.unnormalize_z(
-                            z=self_cond if self.diffusion_cfg.self_condition else z,
+                            z=z,
                             node_mask=torch.ones_like(node_mask_fixed),
                             generate_x_only=generate_x_only
                         )

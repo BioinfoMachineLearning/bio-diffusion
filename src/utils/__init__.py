@@ -161,6 +161,7 @@ class EMA(Callback):
         # when loading within apps such as NeMo, EMA weights will be loaded by the experiment manager separately
         if self._ema_model_weights is None:
             self._ema_model_weights = state_dict.get("ema_weights")
+            log.info("EMA weights have been loaded successfully through `state_dict`. Continuing training with saved EMA weights.")
 
     def on_load_checkpoint(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", checkpoint: Dict[str, Any]
@@ -177,11 +178,24 @@ class EMA(Callback):
                 )
                 return
             ema_path = trainer.ckpt_path.replace(ext, f"-EMA{ext}")
+            ckpt_path = trainer.ckpt_path
             if os.path.exists(ema_path):
                 ema_state_dict = torch.load(ema_path, map_location=torch.device("cpu"))
                 self._ema_model_weights = ema_state_dict["state_dict"].values()
                 del ema_state_dict
                 log.info("EMA weights have been loaded successfully. Continuing training with saved EMA weights.")
+            elif os.path.exists(ckpt_path):
+                state_dict = torch.load(ckpt_path, map_location=torch.device("cpu"))
+                if "callbacks" in state_dict and "EMA" in state_dict["callbacks"] and "ema_weights" in state_dict["callbacks"]["EMA"]:
+                    # note: this means we have found `ema_weights` which will subsequently be loaded via `load_state_dict()`
+                    pass
+                else:
+                    warnings.warn(
+                        "we were unable to find the associated EMA weights when re-loading, "
+                        "training will start with new EMA weights.",
+                        UserWarning,
+                    )
+                del state_dict
             else:
                 warnings.warn(
                     "we were unable to find the associated EMA weights when re-loading, "
@@ -232,11 +246,13 @@ class EMAModelCheckpoint(ModelCheckpoint):
         # call the parent class constructor with the provided kwargs
         super().__init__(**kwargs)
 
-    def _get_ema_callback(self, trainer: "pl.Trainer") -> Optional[EMA]:
+    @staticmethod
+    def _get_ema_callback(trainer: "pl.Trainer") -> Optional[EMA]:
         ema_callback = None
         for callback in trainer.callbacks:
             if isinstance(callback, EMA):
                 ema_callback = callback
+                break
         return ema_callback
 
     def _save_checkpoint(self, trainer: "pl.Trainer", filepath: str) -> None:

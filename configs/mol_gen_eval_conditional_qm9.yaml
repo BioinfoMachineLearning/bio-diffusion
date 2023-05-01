@@ -16,6 +16,7 @@ task_name: "mol_gen_eval_conditional_qm9"
 tags: ["dev"]
 
 # inference (i.e., sampling) and evaluation arguments
+seed: 42
 generator_model_filepath: ???
 classifier_model_dir: ""
 property: "alpha"

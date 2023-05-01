@@ -19,6 +19,7 @@ tags: ["dev"]
 ckpt_path: ???
 
 # inference (i.e., sampling) and evaluation arguments
+seed: 42
 num_samples: 10000
 sampling_batch_size: 100
 num_test_passes: 5

@@ -18,6 +18,7 @@ tags: ["dev"]
 ckpt_path: ???
 
 # inference (i.e., sampling) arguments
+seed: ???
 output_dir: ""
 num_samples: ???
 num_nodes: 19

@@ -14,8 +14,6 @@ from pytorch_lightning import Callback, LightningDataModule, LightningModule, Tr
 from pytorch_lightning.loggers import LightningLoggerBase
 from typing import List, Optional, Tuple
 
-from src.utils.pylogger import get_pylogger
-
 root = pyrootutils.setup_root(
     search_from=__file__,
     indicator=[".git", "pyproject.toml"],
@@ -24,6 +22,7 @@ root = pyrootutils.setup_root(
 )
 
 from src import LR_SCHEDULER_MANUAL_INTERPOLATION_HELPER_CONFIG_ITEMS, LR_SCHEDULER_MANUAL_INTERPOLATION_PRIMARY_CONFIG_ITEMS, MODEL_WATCHING_LOGGERS, unwatch_model, utils, watch_model
+from src.utils.pylogger import get_pylogger
 
 pr.confProDy(verbosity="none")
 

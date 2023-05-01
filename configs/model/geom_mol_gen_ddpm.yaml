@@ -19,3 +19,5 @@ defaults:
   - module_cfg: geom_mol_gen_ddpm_gcp_module.yaml
   - layer_cfg: geom_mol_gen_ddpm_gcp_interaction_layer.yaml
   - diffusion_cfg: geom_mol_gen_ddpm.yaml
+
+seed: ${..seed}
