@@ -10,7 +10,7 @@ wandb:
   project: "Bio-Diffusion"
   log_model: true # upload lightning ckpts
   prefix: "" # a string to put at the beginning of metric keys
-  entity: "bml-lab" # set to name of your wandb team
+  entity: "" # set to name of your wandb team
   # group: ""
   tags: []
   job_type: ""
