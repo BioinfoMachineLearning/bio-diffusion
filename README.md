@@ -232,7 +232,7 @@ geom_model_ckpt_path="checkpoints/GEOM/Unconditional/model_2_epoch_79-EMA.ckpt"
 output_dir="./"
 my_seed_value=123
 
-python3 src/mol_gen_sample.py datamodule=edm_geom model=geom_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] ckpt_path="$geom_model_ckpt_path" num_samples=250 num_nodes=19 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="$output_dir" seed="$my_seed_value"
+python3 src/mol_gen_sample.py datamodule=edm_geom model=geom_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] ckpt_path="$geom_model_ckpt_path" num_samples=250 num_nodes=44 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="$output_dir" seed="$my_seed_value"
 ```
 
 ## Acknowledgements
