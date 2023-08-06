@@ -90,7 +90,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     )
 
     log.info("Loading checkpoint!")
-    device = f"cuda:{cfg.trainer.devices[0]}" if torch.cuda.is_available() else "cpu"
+    device = (
+        ("cuda" if isinstance(cfg.trainer.devices, int) else f"cuda:{cfg.trainer.devices[0]}")
+        if torch.cuda.is_available()
+        else "cpu"
+    )
     model = model.load_from_checkpoint(
         # allow one to evaluate with an older model using custom hyperparameters
         checkpoint_path=cfg.ckpt_path,

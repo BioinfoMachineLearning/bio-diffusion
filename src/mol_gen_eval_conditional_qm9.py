@@ -169,7 +169,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         (cfg.property in cfg.classifier_model_dir or cfg.sweep_property_values)
     )
 
-    device = f"cuda:{cfg.trainer.devices[0]}" if torch.cuda.is_available() else "cpu"
+    device = (
+        ("cuda" if isinstance(cfg.trainer.devices, int) else f"cuda:{cfg.trainer.devices[0]}")
+        if torch.cuda.is_available()
+        else "cpu"
+    )
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)

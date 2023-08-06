@@ -104,7 +104,11 @@ def sample(cfg: DictConfig) -> Tuple[dict, dict]:
         utils.log_hyperparameters(object_dict)
 
     log.info("Loading checkpoint!")
-    device = f"cuda:{cfg.trainer.devices[0]}" if torch.cuda.is_available() else "cpu"
+    device = (
+        ("cuda" if isinstance(cfg.trainer.devices, int) else f"cuda:{cfg.trainer.devices[0]}")
+        if torch.cuda.is_available()
+        else "cpu"
+    )
     model = model.load_from_checkpoint(
         checkpoint_path=cfg.ckpt_path,
         map_location=device,

@@ -252,7 +252,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
     datamodule.setup()
 
-    device = f"cuda:{cfg.trainer.devices[0]}" if torch.cuda.is_available() else "cpu"
+    device = (
+        ("cuda" if isinstance(cfg.trainer.devices, int) else f"cuda:{cfg.trainer.devices[0]}")
+        if torch.cuda.is_available()
+        else "cpu"
+    )
     sampling_num_nodes = torch.tensor([QM9_OPTIMIZATION_NUM_NODES for _ in range(cfg.num_samples)], device=device)
 
     if not cfg.use_pregenerated_molecules:
