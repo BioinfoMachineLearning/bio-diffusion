@@ -4,6 +4,7 @@
 
 import torch
 import hydra
+import os
 import pyrootutils
 
 import prody as pr
@@ -172,12 +173,14 @@ def sample(cfg: DictConfig) -> Tuple[dict, dict]:
         sanitize=cfg.sanitize,
         largest_frag=not cfg.all_frags,
         add_hydrogens=False,
+        sample_chain=cfg.sample_chain,
         relax_iter=(200 if cfg.relax else 0),
         num_timesteps=cfg.num_timesteps,
         node_mask=node_mask,
         num_resamplings=cfg.num_resamplings,
         jump_length=cfg.jump_length
     )
+    os.makedirs(cfg.output_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%m%d%Y_%H_%M_%S")
     write_sdf_file(Path(cfg.output_dir, f"{timestamp}_mol.sdf"), molecules)
 
