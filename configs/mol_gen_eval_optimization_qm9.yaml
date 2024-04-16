@@ -22,11 +22,13 @@ conditional_generator_model_filepath: ???
 classifier_model_dir: ""
 sampling_output_dir: ""
 num_samples: 1000
+num_timesteps: 10
 property: "alpha"
-iterations: 10
+iterations: 1
 num_optimization_timesteps: 100
 return_frames: 1  # note: set `return_frames > 1` to save sample 0's optimization GIF for each iteration
 debug_break: false
-experiment_name: ${.property}-optimizing
+save_molecules: false
+experiment_name: ${.property}-optimizing-${.seed}
 generate_molecules_only: false
 use_pregenerated_molecules: false
