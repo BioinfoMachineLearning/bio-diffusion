@@ -737,6 +737,7 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
         num_samples: int,
         node_mask: Optional[TensorType["batch_num_nodes"]] = None,
         context: Optional[TensorType["batch_size", "num_context_features"]] = None,
+        num_timesteps: Optional[int] = None,
         id_from: int = 0,
         name: str = "molecule"
     ):
@@ -758,7 +759,8 @@ class GEOMMoleculeGenerationDDPM(LightningModule):
             num_nodes=num_nodes,
             node_mask=node_mask,
             context=context,
-            device=self.device
+            device=self.device,
+            num_timesteps=num_timesteps
         )
 
         x = xh[:, :self.num_x_dims]
