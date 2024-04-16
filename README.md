@@ -20,7 +20,7 @@ A PyTorch hub of denoising diffusion probabilistic models designed to generate n
 
 <div align="center">
 
-![Animation of diffusion model-generated GEOM-Drugs-sized 3D molecule visualized successively](img/gcdm_geom_drugs_stylized_animation.mp4)
+<video src="https://github.com/BioinfoMachineLearning/bio-diffusion/raw/main/img/gcdm_geom_drugs_stylized_animation.mp4" width="300" />
 
 </div>
 
