@@ -16,7 +16,7 @@
 
 ## Description
 
-A PyTorch hub of denoising diffusion probabilistic models designed to generate and optimize novel biological data
+Geometric diffusion generative models designed to generate and optimize novel biological data
 
 <div align="center">
 
