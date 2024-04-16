@@ -9,7 +9,7 @@ import torch
 
 import torch.nn as nn
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, open_dict
 from pathlib import Path
 from pytorch_lightning import LightningDataModule, LightningModule
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -24,7 +24,7 @@ root = pyrootutils.setup_root(
 from src.datamodules.components.edm import check_molecular_stability, get_bond_length_arrays
 from src.datamodules.components.edm.datasets_config import QM9_WITH_H, QM9_WITHOUT_H
 from src.models import PropertiesDistribution, compute_mean_mad
-from src.models.components import load_molecule_xyz
+from src.models.components import load_molecule_xyz, save_xyz_file
 from src.utils.pylogger import get_pylogger
 
 from src import LR_SCHEDULER_MANUAL_INTERPOLATION_HELPER_CONFIG_ITEMS, LR_SCHEDULER_MANUAL_INTERPOLATION_PRIMARY_CONFIG_ITEMS, get_classifier, test_with_property_classifier, utils
@@ -33,6 +33,9 @@ from typeguard import typechecked
 from torchtyping import TensorType, patch_typeguard
 
 patch_typeguard()  # use before @typechecked
+
+import lovely_tensors as lt
+lt.monkey_patch()
 
 
 QM9_OPTIMIZATION_NUM_NODES = 19
@@ -81,7 +84,9 @@ class OptimizationDiffusionDataLoader:
         iterations: int = 200,
         num_optimization_timesteps: int = 10,
         return_frames: int = 1,
-        unknown_labels: bool = False
+        experiment_name: str = "conditional_diffusion",
+        unknown_labels: bool = False,
+        save_molecules: bool = False,
     ):
         assert iterations > 0, \
             "Optimization requires at least two iterations, " \
@@ -95,9 +100,11 @@ class OptimizationDiffusionDataLoader:
         self.device = device
         self.dataset_info = dataset_info
         self.iterations = iterations
+        self.experiment_name = experiment_name
         self.num_optimization_timesteps = num_optimization_timesteps
         self.return_frames = return_frames
         self.unknown_labels = unknown_labels
+        self.save_molecules = save_molecules
 
         self.samples = self.load_pregenerated_samples(sampling_output_dir)
         self.context = self.props_distr.sample_batch(num_nodes).to(device)  # fix context so we can compare between iterations
@@ -126,7 +133,8 @@ class OptimizationDiffusionDataLoader:
     def optimize_pregenerated_samples(
         self,
         score_initial_samples: bool = False,
-        analyze_initial_samples_stability: bool = True
+        analyze_initial_samples_stability: bool = True,
+        id_from: int = 0
     ) -> Dict[str, Any]:
         if score_initial_samples:
             # evaluate stability of initial molecules
@@ -150,7 +158,7 @@ class OptimizationDiffusionDataLoader:
             )
         else:
             # optimize initial molecules
-            x, one_hot, _, batch_index = self.model.optimize(
+            x, one_hot, charges, batch_index = self.model.optimize(
                 samples=self.samples,
                 num_nodes=self.num_nodes,
                 context=self.context,
@@ -158,8 +166,15 @@ class OptimizationDiffusionDataLoader:
                 sampling_output_dir=self.sampling_output_dir,
                 optim_property=self.optim_property,
                 iteration_index=self.i - 1,
-                return_frames=self.return_frames
+                return_frames=self.return_frames,
+                norm_with_original_timesteps=False, # NOTE: this is important to ensure the samples are "fully optimized" each iteration
             )
+
+            # iteratively update samples with optimized molecule features
+            self.samples = [
+                (x[(batch_index == sample_idx)].cpu(), one_hot[(batch_index == sample_idx)].cpu())
+                for sample_idx in range(self.num_samples)
+            ]
 
             # evaluate stability of optimized molecules
             num_mols_stable = 0
@@ -176,6 +191,19 @@ class OptimizationDiffusionDataLoader:
                 num_mols_stable = num_mols_stable + 1 if mol_stable else num_mols_stable
             mols_stable_pct = (num_mols_stable / self.num_samples) * 100
             log.info(f"Percentage of optimized samples that are stable molecules: {mols_stable_pct}%")
+
+            # record optimized molecules as `.xyz` files
+            if self.save_molecules:
+                save_xyz_file(
+                    path=f"outputs/{self.experiment_name}/analysis/run{self.i}/",
+                    positions=x,
+                    one_hot=one_hot,
+                    charges=charges,
+                    dataset_info=self.dataset_info,
+                    id_from=id_from,
+                    name="conditional",
+                    batch_index=batch_index
+                )
 
         # build dense node mask, coordinates, and one-hot types
         max_num_nodes = self.num_nodes.max().item()
@@ -243,9 +271,9 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     assert (
         os.path.exists(cfg.unconditional_generator_model_filepath) and
         os.path.exists(cfg.conditional_generator_model_filepath) and
-        (os.path.exists(cfg.classifier_model_dir) or cfg.sweep_property_values) and
+        os.path.exists(cfg.classifier_model_dir) and
         cfg.property in cfg.conditional_generator_model_filepath and
-        (cfg.property in cfg.classifier_model_dir or cfg.sweep_property_values)
+        cfg.property in cfg.classifier_model_dir
     )
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
@@ -303,7 +331,9 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         model.sample_and_save(
             num_samples=cfg.num_samples,
             num_nodes=sampling_num_nodes,
-            sampling_output_dir=Path(cfg.sampling_output_dir)
+            sampling_output_dir=Path(cfg.sampling_output_dir),
+            num_timesteps=cfg.num_timesteps,
+            norm_with_original_timesteps=False,  # NOTE: this is important to ensure the initial samples are "unoptimized" yet realistic when `num_timesteps << T`
         )
 
         if cfg.generate_molecules_only:
@@ -311,10 +341,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             exit(0)
 
     log.info("Installing conditional model configuration values!")
-    cfg.model.module_cfg.conditioning = [cfg.property]
-    cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
-    cfg.datamodule.dataloader_cfg.include_charges = False
-    cfg.datamodule.dataloader_cfg.dataset = "QM9_second_half"
+    with open_dict(cfg):
+        cfg.model.module_cfg.conditioning = [cfg.property]
+        cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
+        cfg.datamodule.dataloader_cfg.include_charges = False
+        cfg.datamodule.dataloader_cfg.dataset = "QM9_second_half"
 
     log.info(f"Instantiating conditional generator model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(
@@ -394,24 +425,27 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         dataset_info=dataset_info,
         iterations=cfg.iterations,
         num_optimization_timesteps=cfg.num_optimization_timesteps,
-        return_frames=cfg.return_frames
+        return_frames=cfg.return_frames,
+        experiment_name=cfg.experiment_name,
+        save_molecules=cfg.save_molecules
     )
 
     log.info("Loading classifier model!")
     classifier = get_classifier(cfg.classifier_model_dir).to(device)
     
     log.info("Evaluating classifier on conditional generator's optimized samples!")
-    loss = test_with_property_classifier(
-        model=classifier,
-        epoch=0,
-        dataloader=optimization_diffusion_dataloader,
-        mean=mean,
-        mad=mad,
-        property=cfg.property,
-        device=device,
-        log_interval=1,
-        debug_break=cfg.debug_break
-    )
+    with torch.no_grad():
+        loss = test_with_property_classifier(
+            model=classifier,
+            epoch=0,
+            dataloader=optimization_diffusion_dataloader,
+            mean=mean,
+            mad=mad,
+            property=cfg.property,
+            device=device,
+            log_interval=1,
+            debug_break=cfg.debug_break
+        )
     log.info("Classifier loss (MAE) on conditional generator's optimized samples: %.4f" % loss)
 
     metric_dict = {}
