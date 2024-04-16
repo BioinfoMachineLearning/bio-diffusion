@@ -24,6 +24,7 @@ num_samples: ???
 num_nodes: 19
 all_frags: true
 sanitize: false
+sample_chain: false
 relax: false
 num_resamplings: 1
 jump_length: 1
