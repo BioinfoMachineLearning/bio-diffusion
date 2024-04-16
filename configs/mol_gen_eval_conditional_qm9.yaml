@@ -24,6 +24,7 @@ iterations: 100
 batch_size: 100
 debug_break: false
 sweep_property_values: false
+save_molecules: true
 num_sweeps: 10
-experiment_name: ${.property}-conditioning
+experiment_name: ${.property}-conditioning-${.seed}
 output_dir: ""
