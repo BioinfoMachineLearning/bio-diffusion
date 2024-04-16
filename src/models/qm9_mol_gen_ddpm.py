@@ -648,6 +648,7 @@ class QM9MoleculeGenerationDDPM(LightningModule):
         id_from: int = 0,
         chain_viz_batch_element_idx: int = 0,
         name: str = os.sep + "chain",
+        norm_with_original_timesteps: bool = False,
         verbose: bool = True
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         # context-conditioning
@@ -665,7 +666,8 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             context=context,
             device=self.device,
             num_timesteps=num_timesteps,
-            return_frames=return_frames
+            return_frames=return_frames,
+            norm_with_original_timesteps=norm_with_original_timesteps,
         )
 
         # visualize optimized samples
