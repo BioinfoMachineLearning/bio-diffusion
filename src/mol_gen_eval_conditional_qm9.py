@@ -10,9 +10,11 @@ import torch
 import prody as pr
 import torch.nn as nn
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, open_dict
 from pytorch_lightning import LightningDataModule, LightningModule
 from typing import Any, Dict, Optional, Tuple, Union
+
+from src.models.components import save_xyz_file
 
 root = pyrootutils.setup_root(
     search_from=__file__,
@@ -76,7 +78,9 @@ class ConditionalDiffusionDataLoader:
         device: Union[torch.device, str],
         dataset_info: Dict[str, Any],
         iterations: int = 200,
-        unknown_labels: bool = False
+        experiment_name: str = "conditional_diffusion",
+        unknown_labels: bool = False,
+        save_molecules: bool = False,
     ):
         self.model = model
         self.nodes_distr = nodes_distr
@@ -84,22 +88,37 @@ class ConditionalDiffusionDataLoader:
         self.device = device
         self.dataset_info = dataset_info
         self.iterations = iterations
+        self.experiment_name = experiment_name
         self.unknown_labels = unknown_labels
         self.num_samples = batch_size
+        self.save_molecules = save_molecules
         self.i = 0
 
     def __iter__(self):
         return self
 
     @typechecked
-    def sample(self) -> Dict[str, Any]:
+    def sample(self, id_from: int = 0) -> Dict[str, Any]:
         num_nodes = self.nodes_distr.sample(self.num_samples).to(self.device)
         context = self.props_distr.sample_batch(num_nodes).to(self.device)
-        x, one_hot, _, _ = self.model.sample(
+        x, one_hot, charges, batch_index = self.model.sample(
             num_samples=self.num_samples,
             num_nodes=num_nodes,
             context=context
         )
+
+        # record generated molecules as `.xyz` files
+        if self.save_molecules:
+            save_xyz_file(
+                path=f"outputs/{self.experiment_name}/analysis/run{self.i}/",
+                positions=x,
+                one_hot=one_hot,
+                charges=charges,
+                dataset_info=self.dataset_info,
+                id_from=id_from,
+                name="conditional",
+                batch_index=batch_index
+            )
 
         # build dense node mask, coordinates, and one-hot types
         max_num_nodes = num_nodes.max().item()
@@ -180,10 +199,11 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     datamodule.setup()
 
     log.info("Installing conditional model configuration values!")
-    cfg.model.module_cfg.conditioning = [cfg.property]
-    cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
-    cfg.datamodule.dataloader_cfg.include_charges = False
-    cfg.datamodule.dataloader_cfg.dataset = "QM9_second_half"
+    with open_dict(cfg):
+        cfg.model.module_cfg.conditioning = [cfg.property]
+        cfg.model.diffusion_cfg.norm_values = [1.0, 8.0, 1.0]
+        cfg.datamodule.dataloader_cfg.include_charges = False
+        cfg.datamodule.dataloader_cfg.dataset = "QM9_second_half"
 
     log.info(f"Instantiating generator model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(
@@ -271,24 +291,27 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
             batch_size=cfg.batch_size,
             device=device,
             dataset_info=dataset_info,
-            iterations=cfg.iterations
+            iterations=cfg.iterations,
+            experiment_name=cfg.experiment_name,
+            save_molecules=cfg.save_molecules
         )
 
         log.info("Loading classifier model!")
         classifier = get_classifier(cfg.classifier_model_dir).to(device)
         
         log.info("Evaluating classifier on generator's samples!")
-        loss = test_with_property_classifier(
-            model=classifier,
-            epoch=0,
-            dataloader=conditional_diffusion_dataloader,
-            mean=mean,
-            mad=mad,
-            property=cfg.property,
-            device=device,
-            log_interval=1,
-            debug_break=cfg.debug_break
-        )
+        with torch.no_grad():
+            loss = test_with_property_classifier(
+                model=classifier,
+                epoch=0,
+                dataloader=conditional_diffusion_dataloader,
+                mean=mean,
+                mad=mad,
+                property=cfg.property,
+                device=device,
+                log_interval=1,
+                debug_break=cfg.debug_break
+            )
         log.info("Classifier loss (MAE) on generator's samples: %.4f" % loss)
 
     metric_dict = {}
