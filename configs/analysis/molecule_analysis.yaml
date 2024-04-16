@@ -1,0 +1,9 @@
+dataset: QM9  # NOTE: must be one of (`QM9`, `GEOM`)
+model_type: Unconditional  # NOTE: must be one of (`Unconditional`, `Conditional`)
+model_index: 1  # NOTE: must be one of (`1`, `2`, `3`)
+sampling_index: ???  # NOTE: must be one of (`0`, `1`, `2`, `3`, `4`)
+method: ???  # NOTE: must be one of (`gcdm`, `geoldm`)
+property: ''  # NOTE: if `model_type` is `Conditional`, must be one of (`_alpha`, `_gap`, `_homo`, `_lumo`, `_mu`, `_Cv`)
+input_molecule_dir: ${oc.env:PROJECT_ROOT}/output/${dataset}/${model_type}/${method}_model_${model_index}${property}/ # directory containing input molecules
+bust_results_filepath: ${oc.env:PROJECT_ROOT}/output/${dataset}/${model_type}_analysis/${method}${property}_molecule_bust_results.csv # filepath to which to save bust results
+full_report: true # whether to generate a full report or not
