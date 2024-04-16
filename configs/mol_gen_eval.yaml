@@ -22,4 +22,8 @@ ckpt_path: ???
 seed: 42
 num_samples: 10000
 sampling_batch_size: 100
+num_timesteps: 1000
 num_test_passes: 5
+check_val_nll: true
+save_molecules: false
+output_dir: null
