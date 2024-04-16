@@ -1290,7 +1290,8 @@ class EquivariantVariationalDiffusion(nn.Module):
         context: Optional[TensorType["batch_size", "num_context_features"]] = None,
         fix_noise: bool = False,
         generate_x_only: bool = False,
-        fix_self_conditioning_noise: bool = False
+        fix_self_conditioning_noise: bool = False,
+        norm_with_original_timesteps: bool = False,
     ) -> Tuple[
         Union[
             TensorType["batch_num_nodes", "num_x_dims_plus_num_node_scalar_features"],
@@ -1329,13 +1330,13 @@ class EquivariantVariationalDiffusion(nn.Module):
 
         # iteratively sample p(z_s | z_t) for `t = 1, ..., T`, with `s = t - 1`.
         self_cond = None
-        s_array_self_cond = torch.full((num_samples, 1), fill_value=0, device=device) / num_timesteps
+        s_array_self_cond = torch.full((num_samples, 1), fill_value=0, device=device) / (self.T if norm_with_original_timesteps else num_timesteps)
         out = torch.zeros((return_frames,) + z.size(), device=device)
         for s in reversed(range(0, num_timesteps)):
             s_array = torch.full((num_samples, 1), fill_value=s, device=device)
             t_array = s_array + 1
-            s_array = s_array / num_timesteps
-            t_array = t_array / num_timesteps
+            s_array = s_array / (self.T if norm_with_original_timesteps else num_timesteps)
+            t_array = t_array / (self.T if norm_with_original_timesteps else num_timesteps)
 
             z = self.sample_p_zs_given_zt(
                 s=s_array,
