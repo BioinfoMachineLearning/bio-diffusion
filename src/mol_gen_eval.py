@@ -11,6 +11,7 @@ import numpy as np
 import prody as pr
 
 from omegaconf import DictConfig
+from pathlib import Path
 from pytorch_lightning.loggers import LightningLoggerBase
 from pytorch_lightning import Callback, LightningDataModule, LightningModule, Trainer
 from typing import List, Tuple
@@ -121,10 +122,15 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         )
 
     log.info("Starting sampling!")
+    if cfg.get("output_dir"):
+        os.makedirs(cfg.output_dir, exist_ok=True)
 
     metrics_dict = model.sample_and_analyze(
         num_samples=cfg.num_samples,
-        batch_size=cfg.sampling_batch_size
+        batch_size=cfg.sampling_batch_size,
+        num_timesteps=cfg.num_timesteps,
+        save_molecules=cfg.save_molecules,
+        output_dir=Path(cfg.output_dir) if cfg.get("output_dir") else None,
     )
 
     log.info("Atoms Stable %.4f, Molecules Stable: %.4f, Atom Types KL Divergence: %.4f" %
@@ -157,9 +163,13 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         log.info("Logging hyperparameters!")
         utils.log_hyperparameters(object_dict)
 
-    log.info("Starting validation and testing with checkpoint!")
-    val_dataloader_outputs = trainer.validate(model=model, ckpt_path=cfg.ckpt_path, datamodule=datamodule)
-    val_pass_mean_nll = np.mean([outputs["val/loss"] for outputs in val_dataloader_outputs])
+    if cfg.get("check_val_nll"):
+        log.info("Starting validation with checkpoint!")
+        val_dataloader_outputs = trainer.validate(model=model, ckpt_path=cfg.ckpt_path, datamodule=datamodule)
+        val_pass_mean_nll = np.mean([outputs["val/loss"] for outputs in val_dataloader_outputs])
+        log.info(f"Validation negative log-likelihood (NLL): {val_pass_mean_nll}")
+
+    log.info("Starting testing with checkpoint!")
     num_test_passes = (
         1
         if "geom" in cfg.datamodule.dataloader_cfg.dataset.lower()
@@ -173,7 +183,6 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         metrics["test/loss"] for test_pass in test_dataloader_pass_outputs for metrics in test_pass
     ])
 
-    log.info(f"Validation negative log-likelihood (NLL): {val_pass_mean_nll}")
     log.info(f"Test negative log-likelihood (NLL): {test_pass_mean_nll}")
 
     metric_dict = trainer.callback_metrics
