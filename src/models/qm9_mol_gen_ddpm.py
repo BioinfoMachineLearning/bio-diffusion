@@ -863,9 +863,11 @@ class QM9MoleculeGenerationDDPM(LightningModule):
         num_nodes: Optional[TensorType["batch_size"]] = None,
         node_mask: Optional[TensorType["batch_num_nodes"]] = None,
         context: Optional[TensorType["batch_size", "num_context_features"]] = None,
+        num_timesteps: Optional[int] = None,
         id_from: int = 0,
         name: str = "molecule",
-        sampling_output_dir: Optional[Path] = None
+        sampling_output_dir: Optional[Path] = None,
+        norm_with_original_timesteps: bool = False,
     ):
         # node count-conditioning
         if num_nodes is None:
@@ -890,7 +892,9 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             num_nodes=num_nodes,
             node_mask=node_mask,
             context=context,
-            device=self.device
+            device=self.device,
+            num_timesteps=num_timesteps,
+            norm_with_original_timesteps=norm_with_original_timesteps,
         )
 
         x = xh[:, :self.num_x_dims]
