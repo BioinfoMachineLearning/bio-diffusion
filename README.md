@@ -20,7 +20,7 @@ A PyTorch hub of denoising diffusion probabilistic models designed to generate n
 
 <div align="center">
 
-<video src="https://github.com/BioinfoMachineLearning/bio-diffusion/raw/main/img/gcdm_geom_drugs_stylized_animation.mp4" width="300" />
+https://github.com/BioinfoMachineLearning/bio-diffusion/assets/7051982/bcff23fa-7bc9-415e-95d0-56827d5035b9
 
 </div>
 
