@@ -1,0 +1,5 @@
+dataset: QM9  # NOTE: must be one of (`QM9`, `GEOM`)
+model_type: Unconditional  # NOTE: must be one of (`Unconditional`, `Conditional`)
+method: ???  # NOTE: must be one of (`gcdm`, `geoldm`)
+property: ''  # NOTE: if `model_type` is `Conditional`, must be one of (`_alpha`, `_gap`, `_homo`, `_lumo`, `_mu`, `_Cv`)
+bust_results_filepath: ${oc.env:PROJECT_ROOT}/output/${dataset}/${model_type}_analysis/${method}${property}_molecule_bust_results.csv # filepath to which bust results were saved
