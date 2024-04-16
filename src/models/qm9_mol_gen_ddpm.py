@@ -1033,6 +1033,7 @@ class QM9MoleculeGenerationDDPM(LightningModule):
         sanitize: bool = False,
         largest_frag: bool = False,
         add_hydrogens: bool = False,
+        sample_chain: bool = False,
         relax_iter: int = 0,
         num_timesteps: Optional[int] = None,
         node_mask: Optional[TensorType["batch_num_nodes"]] = None,
@@ -1048,6 +1049,7 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             sanitize: whether to sanitize molecules
             largest_frag: whether to return only the largest molecular fragment
             add_hydrogens: whether to include hydrogen atoms in the generated molecule
+            sample_chain: whether to sample a chain of molecules
             relax_iter: number of force field optimization steps
             num_timesteps: number of denoising steps; will use training value instead if `None`
             node_mask: mask indicating which nodes are to be ignored during model generation
@@ -1076,12 +1078,15 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             context = None
 
         # sampling
+        if sample_chain:
+            assert num_samples == 1, "Chain sampling is only supported for single-molecule batches."
         if ddpm_mode == "unconditional":
             # sample unconditionally
             xh, batch_index, _ = self.ddpm.mol_gen_sample(
                 num_samples=num_samples,
                 num_nodes=num_nodes,
                 device=self.device,
+                return_frames=num_timesteps if sample_chain else 1,
                 num_timesteps=num_timesteps,
                 node_mask=node_mask,
                 context=context
@@ -1141,40 +1146,64 @@ class QM9MoleculeGenerationDDPM(LightningModule):
         else:
             raise NotImplementedError(f"DDPM type {type(self.ddpm)} is currently not implemented.")
 
-        x = xh[:, :self.num_x_dims].detach().cpu()
-        atom_types = (
-            xh[:, self.num_x_dims:-1].argmax(-1).detach().cpu()
-            if self.include_charges
-            else xh[:, self.num_x_dims:].argmax(-1).detach().cpu()
-        )
-        # TODO: incorporate charges in some meaningful way
-        charges = (
-            xh[:, -1].detach().cpu()
-            if self.include_charges
-            else torch.zeros(0, device=self.device)
-        )
-
         # build RDKit molecule objects
         molecules = []
-        for mol_pc in zip(
-            batch_tensor_to_list(x, batch_index),
-            batch_tensor_to_list(atom_types, batch_index)
-        ):
+        if sample_chain:
+            xh = reverse_tensor(xh)
+            x = xh[:, :, :self.num_x_dims].detach().cpu()
+            atom_types = (
+                xh[:, :, self.num_x_dims:-1].argmax(-1).detach().cpu()
+                if self.include_charges
+                else xh[:, :, self.num_x_dims:].argmax(-1).detach().cpu()
+            )
+            for atom_pos, atom_types in zip(x, atom_types):
+                mol = build_molecule(
+                    atom_pos,
+                    atom_types,
+                    dataset_info=self.dataset_info,
+                    add_coords=True
+                )
+                mol = process_molecule(
+                    rdmol=mol,
+                    add_hydrogens=add_hydrogens,
+                    sanitize=sanitize,
+                    relax_iter=relax_iter,
+                    largest_frag=largest_frag
+                )
+                if mol is not None:
+                    molecules.append(mol)
+        else:
+            x = xh[:, :self.num_x_dims].detach().cpu()
+            atom_types = (
+                xh[:, self.num_x_dims:-1].argmax(-1).detach().cpu()
+                if self.include_charges
+                else xh[:, self.num_x_dims:].argmax(-1).detach().cpu()
+            )
+            # TODO: incorporate charges in some meaningful way
+            charges = (
+                xh[:, -1].detach().cpu()
+                if self.include_charges
+                else torch.zeros(0, device=self.device)
+            )
+            for mol_pc in zip(
+                batch_tensor_to_list(x, batch_index),
+                batch_tensor_to_list(atom_types, batch_index)
+            ):
 
-            mol = build_molecule(
-                *mol_pc,
-                dataset_info=self.dataset_info,
-                add_coords=True
-            )
-            mol = process_molecule(
-                rdmol=mol,
-                add_hydrogens=add_hydrogens,
-                sanitize=sanitize,
-                relax_iter=relax_iter,
-                largest_frag=largest_frag
-            )
-            if mol is not None:
-                molecules.append(mol)
+                mol = build_molecule(
+                    *mol_pc,
+                    dataset_info=self.dataset_info,
+                    add_coords=True
+                )
+                mol = process_molecule(
+                    rdmol=mol,
+                    add_hydrogens=add_hydrogens,
+                    sanitize=sanitize,
+                    relax_iter=relax_iter,
+                    largest_frag=largest_frag
+                )
+                if mol is not None:
+                    molecules.append(mol)
 
         return molecules
 
