@@ -311,6 +311,7 @@ dependencies:
       - einops==0.6.0
       - entrypoints==0.4
       - executing==1.2.0
+      - fastcore==1.5.29
       - filelock==3.8.0
       - fire==0.4.0
       - flatbuffers==22.11.23
@@ -341,6 +342,8 @@ dependencies:
       - lightning-utilities==0.3.0
       - llvmlite==0.39.1
       - lmdb==1.3.0
+      - lovely-numpy==0.2.11
+      - lovely-tensors==0.1.15
       - mako==1.2.3
       - markdown==3.4.1
       - matplotlib-inline==0.1.6
