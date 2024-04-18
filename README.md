@@ -8,7 +8,7 @@
 [![Paper](http://img.shields.io/badge/arXiv-2302.04313-B31B1B.svg)](https://arxiv.org/abs/2302.04313)
 <!-- [![Conference](http://img.shields.io/badge/AnyConference-year-4b44ce.svg)](https://papers.nips.cc/paper/2020) -->
 [![Datasets DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7881981.svg)](https://doi.org/10.5281/zenodo.7881981)
-[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7881986.svg)](https://doi.org/10.5281/zenodo.7881986)
+[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10993735.svg)](https://doi.org/10.5281/zenodo.10993735)
 
 ![Bio-Diffusion.png](./img/Bio-Diffusion.png)
 
