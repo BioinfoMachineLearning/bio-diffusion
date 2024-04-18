@@ -16,7 +16,7 @@
 
 ## Description
 
-Geometric diffusion generative models designed to generate and optimize novel biological data
+A geometry-complete diffusion generative model (GCDM) for 3D molecule generation and optimization
 
 <div align="center">
 
@@ -134,7 +134,7 @@ qm9_gap_generator_model_filepath="checkpoints/QM9/Conditional/gap_model_epoch_16
 qm9_homo_generator_model_filepath="checkpoints/QM9/Conditional/homo_model_epoch_1879-EMA.ckpt"
 qm9_lumo_generator_model_filepath="checkpoints/QM9/Conditional/lumo_model_epoch_1619-EMA.ckpt"
 qm9_mu_generator_model_filepath="checkpoints/QM9/Conditional/mu_model_epoch_1859-EMA.ckpt"
-qm9_Cv_generator_model_filepath="checkpoints/QM9/Conditional/Cv_model_epoch_1539-EMA"
+qm9_Cv_generator_model_filepath="checkpoints/QM9/Conditional/Cv_model_epoch_1539-EMA.ckpt"
 
 qm9_alpha_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_alpha"
 qm9_gap_classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_gap"
