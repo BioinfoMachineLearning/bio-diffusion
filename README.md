@@ -63,10 +63,11 @@ Download checkpoints
 **Note**: Make sure to be located in the project's root directory beforehand (e.g., `~/bio-diffusion/`)
 ```bash
 # fetch and extract model checkpoints directory
-wget https://zenodo.org/record/7881986/files/GCDM_Checkpoints.tar.gz
+wget https://zenodo.org/record/10993735/files/GCDM_Checkpoints.tar.gz
 tar -xzf GCDM_Checkpoints.tar.gz
 rm GCDM_Checkpoints.tar.gz
 ```
+**Note**: EGNN molecular property prediction checkpoints are also included within `GCDM_Checkpoints.tar.gz`, where three checkpoints per property were trained with random seeds (18 in total). Also included in this Zenodo model checkpoints record are trained GeoLDM (Xu et al. 2023) checkpoint files used to produce the benchmarking results in the accompanying GCDM manuscript.
 
 ## How to train
 
