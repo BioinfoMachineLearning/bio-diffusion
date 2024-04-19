@@ -16,9 +16,11 @@
 
 ## Description
 
-A geometry-complete diffusion generative model (GCDM) for 3D molecule generation and optimization
+This is the official codebase of the paper
 
-Paper on arXiv: https://arxiv.org/abs/2302.04313
+**Geometry-Complete Diffusion for 3D Molecule Generation and Optimization**, *ICLR'2023 MLDD Workshop*
+
+[[arXiv](https://arxiv.org/abs/2302.04313)] [[OpenReview](https://openreview.net/forum?id=X-tLu3OUE-d)]
 
 <div align="center">
 
