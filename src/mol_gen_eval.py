@@ -74,7 +74,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
-    assert cfg.get("ckpt_path") is not None and os.path.exists(cfg.ckpt_path)
+    assert cfg.get("ckpt_path") is not None and os.path.exists(cfg.ckpt_path), "Invalid checkpoint path!"
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)

@@ -75,7 +75,7 @@ def sample(cfg: DictConfig) -> Tuple[dict, dict]:
         Tuple[dict, dict]: Dict with metrics and dict with all instantiated objects.
     """
 
-    assert cfg.ckpt_path
+    assert cfg.get("ckpt_path") is not None and os.path.exists(cfg.ckpt_path), "Invalid checkpoint path!"
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(

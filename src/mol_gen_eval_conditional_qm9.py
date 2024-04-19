@@ -186,7 +186,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         (os.path.exists(cfg.classifier_model_dir) or cfg.sweep_property_values) and
         cfg.property in cfg.generator_model_filepath and
         (cfg.property in cfg.classifier_model_dir or cfg.sweep_property_values)
-    )
+    ), "Please provide valid paths for the generator and classifier models!"
 
     device = (
         ("cuda" if isinstance(cfg.trainer.devices, int) else f"cuda:{cfg.trainer.devices[0]}")

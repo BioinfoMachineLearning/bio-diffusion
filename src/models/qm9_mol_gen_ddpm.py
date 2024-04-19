@@ -750,7 +750,12 @@ class QM9MoleculeGenerationDDPM(LightningModule):
         node_mask: Optional[TensorType["batch_num_nodes"]] = None,
         context: Optional[TensorType["batch_size", "num_context_features"]] = None,
         batch_size: Optional[int] = None,
-        max_num_nodes: Optional[int] = 100
+        max_num_nodes: Optional[int] = 100,
+        num_timesteps: Optional[int] = None,
+        id_from: int = 0,
+        name: str = "molecule",
+        save_molecules: bool = False,
+        output_dir: Optional[Path] = None,
     ) -> Dict[str, Any]:
         log.info(f"Analyzing molecule stability at epoch {self.current_epoch}...")
 
@@ -759,12 +764,17 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             if "max_n_nodes" in self.dataset_info
             else max_num_nodes
         )
+        if save_molecules and output_dir is None:
+            if getattr(self, "sampling_output_dir", None) is None:
+                self.sampling_output_dir = Path("sampling_and_analysis_output")
+                self.sampling_output_dir.mkdir(exist_ok=True)
+            output_dir = Path(self.sampling_output_dir, f"epoch_{self.current_epoch}")
 
         batch_size = self.hparams.dataloader_cfg.batch_size if batch_size is None else batch_size
         batch_size = min(batch_size, num_samples)
 
         # note: each item in `molecules` is a tuple of (`position`, `atom_type_encoded`)
-        molecules, atom_types, charges = [], [], []
+        molecules, atom_types, atom_one_hots, charges = [], [], [], []
         for _ in range(math.ceil(num_samples / batch_size)):
             # node count-conditioning
             num_samples_batch = min(batch_size, num_samples - len(molecules))
@@ -773,18 +783,15 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             assert int(num_nodes.max()) <= max_num_nodes
 
             # context-conditioning
-            if self.condition_on_context:
-                if context is None:
-                    context = self.props_distr.sample_batch(num_nodes)
-            else:
-                context = None
+            context = None
 
             xh, batch_index, _ = self.ddpm.mol_gen_sample(
                 num_samples=num_samples_batch,
                 num_nodes=num_nodes,
                 node_mask=node_mask,
                 context=context,
-                device=self.device
+                device=self.device,
+                num_timesteps=num_timesteps,
             )
 
             x_ = xh[:, :self.num_x_dims].detach().cpu()
@@ -792,6 +799,11 @@ class QM9MoleculeGenerationDDPM(LightningModule):
                 xh[:, self.num_x_dims:-1].argmax(-1).detach().cpu()
                 if self.include_charges
                 else xh[:, self.num_x_dims:].argmax(-1).detach().cpu()
+            )
+            atom_one_hot_ = (
+                xh[:, self.num_x_dims:-1].detach().cpu()
+                if self.include_charges
+                else xh[:, self.num_x_dims:].detach().cpu()
             )
             charges_ = (
                 xh[:, -1]
@@ -809,7 +821,20 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             )
 
             atom_types.extend(atom_types_.tolist())
+            atom_one_hots.extend(atom_one_hot_.tolist())
             charges.extend(charges_.tolist())
+
+        if save_molecules:
+            save_xyz_file(
+                path=str(output_dir) + "/",
+                positions=torch.cat([pos for pos, _ in molecules], dim=0),
+                one_hot=torch.tensor(atom_one_hots) if self.include_charges else torch.zeros(0),
+                charges=torch.tensor(charges) if self.include_charges else torch.zeros(0),
+                dataset_info=self.dataset_info,
+                id_from=id_from,
+                name=name,
+                batch_index=torch.repeat_interleave(torch.arange(len(molecules)), torch.tensor([len(pos) for pos, _ in molecules])),
+            )
 
         return self.analyze_samples(molecules, atom_types, charges)
 

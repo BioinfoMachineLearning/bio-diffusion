@@ -274,7 +274,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
         os.path.exists(cfg.classifier_model_dir) and
         cfg.property in cfg.conditional_generator_model_filepath and
         cfg.property in cfg.classifier_model_dir
-    )
+    ), "Please provide valid paths to the unconditional and conditional generator models, as well as the classifier model!"
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
