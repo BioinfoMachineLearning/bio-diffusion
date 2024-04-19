@@ -18,6 +18,8 @@
 
 A geometry-complete diffusion generative model (GCDM) for 3D molecule generation and optimization
 
+Paper on arXiv: https://arxiv.org/abs/2302.04313
+
 <div align="center">
 
 ![Animation of diffusion model-generated 3D molecules visualized successively](img/GCDM_Sampled_Molecule_Trajectory.gif)
@@ -45,6 +47,7 @@ A geometry-complete diffusion generative model (GCDM) for 3D molecule generation
     - [Reproduce paper results for *property-conditional* small molecule generation (**QM9**)](#reproduce-paper-results-for-property-conditional-small-molecule-generation-with-the-qm9-dataset-12-hrs)
     - [Reproduce paper results for *unconditional* drug-size molecule generation (**GEOM-Drugs**)](#reproduce-paper-results-for-unconditional-drug-size-molecule-generation-with-the-geom-drugs-dataset-24-hrs)
     - [Reproduce paper results for *property-specific* small molecule optimization (**QM9**)](#reproduce-paper-results-for-property-specific-small-molecule-optimization-with-the-qm9-dataset-12-hrs)
+    - [Reproduce paper results for *protein-conditional* small molecule generation (**Binding MOAD & CrossDocked**)](#reproduce-paper-results-for-protein-conditional-small-molecule-generation-with-the-binding-moad-and-crossdocked-datasets-binding-moad--crossdocked-5-days)
 
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -288,6 +291,10 @@ python3 src/mol_gen_eval_optimization_qm9.py datamodule=edm_qm9 model=qm9_mol_ge
 ```
 
 **NOTE**: Refer to `src/analysis/optimization_analysis.py` to manually enter and plot the optimization results reported by the commands above.
+
+#### Reproduce paper results for *protein-conditional* small molecule generation with the Binding MOAD and CrossDocked datasets (**Binding MOAD & CrossDocked**: ~5 days)
+
+Please refer to the following dedicated GitHub repository for further details: https://github.com/BioinfoMachineLearning/GCDM-SBDD.
 
 ## Acknowledgements
 
