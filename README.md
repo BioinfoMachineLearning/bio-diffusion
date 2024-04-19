@@ -8,7 +8,7 @@
 [![Paper](http://img.shields.io/badge/arXiv-2302.04313-B31B1B.svg)](https://arxiv.org/abs/2302.04313)
 <!-- [![Conference](http://img.shields.io/badge/AnyConference-year-4b44ce.svg)](https://papers.nips.cc/paper/2020) -->
 [![Datasets DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7881981.svg)](https://doi.org/10.5281/zenodo.7881981)
-[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10993735.svg)](https://doi.org/10.5281/zenodo.10993735)
+[![Checkpoints DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10995319.svg)](https://doi.org/10.5281/zenodo.10995319)
 
 ![Bio-Diffusion.png](./img/Bio-Diffusion.png)
 
@@ -117,7 +117,7 @@ Download checkpoints (~5 GB extracted: ~5 minutes)
 **Note**: Make sure to be located in the project's root directory beforehand (e.g., `~/bio-diffusion/`)
 ```bash
 # fetch and extract model checkpoints directory
-wget https://zenodo.org/record/10993735/files/GCDM_Checkpoints.tar.gz
+wget https://zenodo.org/record/10995319/files/GCDM_Checkpoints.tar.gz
 tar -xzf GCDM_Checkpoints.tar.gz
 rm GCDM_Checkpoints.tar.gz
 ```
