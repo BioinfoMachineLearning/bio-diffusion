@@ -131,7 +131,7 @@ rm GCDM_Checkpoints.tar.gz
 python3 src/mol_gen_sample.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] ckpt_path="checkpoints/QM9/Unconditional/model_1_epoch_979-EMA.ckpt" num_samples=250 num_nodes=19 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="./" seed=123
 ```
 
-**NOTE**: Output files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_sample.py --help` to view an exhaustive list of available input arguments.
+**NOTE**: Output `.sdf` files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_sample.py --help` to view an exhaustive list of available input arguments.
 
 **CONSIDER**: Running `bust MY_GENERATED_MOLS.sdf` to determine which of the generated molecules are valid according to the PoseBusters software suite (~3 minutes).
 
@@ -153,7 +153,7 @@ python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen
 python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false generator_model_filepath="checkpoints/QM9/Conditional/Cv_model_epoch_1539-EMA.ckpt" property=Cv iterations=100 batch_size=100 sweep_property_values=true num_sweeps=10 output_dir="./" seed=123
 ```
 
-**NOTE**: Output files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_eval_conditional_qm9.py --help` to view an exhaustive list of available input arguments.
+**NOTE**: Output `.sdf` files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_eval_conditional_qm9.py --help` to view an exhaustive list of available input arguments.
 
 **CONSIDER**: Running `bust MY_GENERATED_MOLS.sdf` to determine which of the generated molecules are valid according to the PoseBusters software suite (~3 minutes).
 
@@ -164,7 +164,7 @@ python3 src/mol_gen_eval_conditional_qm9.py datamodule=edm_qm9 model=qm9_mol_gen
 python3 src/mol_gen_sample.py datamodule=edm_geom model=geom_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] ckpt_path="checkpoints/GEOM/Unconditional/36hq94x5_model_1_epoch_76-EMA.ckpt" num_samples=250 num_nodes=44 all_frags=true sanitize=false relax=false num_resamplings=1 jump_length=1 num_timesteps=1000 output_dir="./" seed=123
 ```
 
-**NOTE**: Output files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_sample.py --help` to view an exhaustive list of available input arguments.
+**NOTE**: Output `.sdf` files will be stored in the current working directory by default. Specify this using `output_dir`. Run `python3 src/mol_gen_sample.py --help` to view an exhaustive list of available input arguments.
 
 **CONSIDER**: Running `bust MY_GENERATED_MOLS.sdf` to determine which of the generated molecules are valid according to the PoseBusters software suite (~3 minutes).
 
@@ -179,7 +179,7 @@ python3 src/mol_gen_eval_optimization_qm9.py datamodule=edm_qm9 model=qm9_mol_ge
 python3 src/mol_gen_eval_optimization_qm9.py datamodule=edm_qm9 model=qm9_mol_gen_ddpm logger=csv trainer.accelerator=gpu trainer.devices=[0] datamodule.dataloader_cfg.num_workers=1 model.diffusion_cfg.sample_during_training=false unconditional_generator_model_filepath="checkpoints/QM9/Unconditional/model_1_epoch_979-EMA.ckpt" conditional_generator_model_filepath="checkpoints/QM9/Conditional/alpha_model_epoch_1619-EMA.ckpt" classifier_model_dir="checkpoints/QM9/Property_Classifiers/exp_class_alpha_seed_1" num_samples=1000 sampling_output_dir="./mols_to_optimize/" property=alpha iterations=10 num_optimization_timesteps=100 return_frames=1 generate_molecules_only=false use_pregenerated_molecules=true save_molecules=true
 ```
 
-**NOTE**: Output files will be stored under `./outputs/`. Run `python3 src/mol_gen_eval_optimization_qm9.py --help` to view an exhaustive list of available input arguments.
+**NOTE**: Output `.sdf` files will be stored under `./outputs/`. Run `python3 src/mol_gen_eval_optimization_qm9.py --help` to view an exhaustive list of available input arguments.
 
 **CONSIDER**: Running `bust MY_GENERATED_MOLS.sdf` to determine which of the generated molecules are valid according to the PoseBusters software suite (~3 minutes).
 
