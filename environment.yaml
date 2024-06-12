@@ -25,9 +25,9 @@ dependencies:
   - brotlipy=0.7.0=py39hb9d737c_1004
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.18.1=h7f98852_0
-  - ca-certificates=2024.2.2=hbcca054_0
+  - ca-certificates=2024.6.2=hbcca054_0
   - cairo=1.16.0=ha61ee94_1014
-  - certifi=2024.2.2=pyhd8ed1ab_0
+  - certifi=2024.6.2=pyhd8ed1ab_0
   - cffi=1.15.1=py39he91dace_3
   - charset-normalizer=2.1.1=pyhd8ed1ab_0
   - chemps2=1.8.11=hbe8a562_0
@@ -35,6 +35,7 @@ dependencies:
   - conda=22.11.1=py39hf3d152e_1
   - conda-package-handling=2.0.2=pyh38be061_0
   - conda-package-streaming=0.7.0=pyhd8ed1ab_1
+  - crest=2.12=h9d67668_0
   - cryptography=39.0.0=py39hd598818_0
   - cudatoolkit=11.6.0=hecad31d_10
   - cudatoolkit-dev=11.6.0=h72bdee0_5
@@ -158,6 +159,7 @@ dependencies:
   - mamba=1.2.0=py39hfa8f2c8_0
   - markupsafe=2.1.1=py39h7f8727e_0
   - matplotlib-base=3.4.3=py39h2fa2bec_2
+  - mctc-lib=0.3.1=hc3ea6d6_0
   - mdtraj=1.9.7=py39h62423bb_4
   - mkl=2021.4.0=h06a4308_640
   - mkl-service=2.4.0=py39h7e14d7c_0
@@ -272,6 +274,7 @@ dependencies:
   - xorg-renderproto=0.11.1=h7f98852_1002
   - xorg-xextproto=7.3.0=h7f98852_1002
   - xorg-xproto=7.0.31=h7f98852_1007
+  - xtb=6.5.1=h97a9613_0
   - xz=5.2.6=h5eee18b_0
   - yaml=0.2.5=h7f98852_2
   - yaml-cpp=0.7.0=h27087fc_2
