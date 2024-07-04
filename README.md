@@ -20,7 +20,7 @@ This is the official codebase of the paper
 
 **Geometry-Complete Diffusion for 3D Molecule Generation and Optimization**, *Nature CommsChem*
 
-[[arXiv](https://arxiv.org/abs/2302.04313)] [[OpenReview](https://openreview.net/forum?id=X-tLu3OUE-d)] [[Nature CommsChem](https://www.nature.com/articles/s42004-024-01233-z)]
+[[arXiv](https://arxiv.org/abs/2302.04313)] [[Nature CommsChem](https://www.nature.com/articles/s42004-024-01233-z)]
 
 <div align="center">
 
