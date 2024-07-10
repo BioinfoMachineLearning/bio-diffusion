@@ -298,6 +298,20 @@ python3 src/mol_gen_eval_optimization_qm9.py datamodule=edm_qm9 model=qm9_mol_ge
 
 Please refer to the following dedicated GitHub repository for further details: https://github.com/BioinfoMachineLearning/GCDM-SBDD.
 
+## Docker
+
+To run this project in a Docker container, you can use the following commands:
+
+```bash
+## Build the image
+docker build -t bio-diffusion .
+
+## Run the container (with GPUs and mounting the current directory)
+docker run -it --gpus all -v .:/mnt --name bio-diffusion bio-diffusion
+```
+__Note:__ You will still need to download the checkpoints and data as described in the installation guide. Then, update the Python commands to point to the desired local location of your files (e.g., `/mnt/checkpoints` and `/mnt/outputs`) once in the container.
+
+
 ## Acknowledgements
 
 Bio-Diffusion builds upon the source code and data from the following projects:
