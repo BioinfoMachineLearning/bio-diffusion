@@ -173,8 +173,8 @@ outputs/
 epoch_*/
 .cache/
 
-data/EDM/GEOM
-data/EDM/QM9
+data/EDM/GEOM*
+data/EDM/QM9*
 
 # NFS
 .nfs*

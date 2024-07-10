@@ -783,7 +783,11 @@ class QM9MoleculeGenerationDDPM(LightningModule):
             assert int(num_nodes.max()) <= max_num_nodes
 
             # context-conditioning
-            context = None
+            if self.condition_on_context:
+                if context is None:
+                    context = self.props_distr.sample_batch(num_nodes)
+            else:
+                context = None
 
             xh, batch_index, _ = self.ddpm.mol_gen_sample(
                 num_samples=num_samples_batch,
