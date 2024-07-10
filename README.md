@@ -51,6 +51,7 @@ This is the official codebase of the paper
     - [Reproduce paper results for *property-specific* small molecule optimization (**QM9**)](#reproduce-paper-results-for-property-specific-small-molecule-optimization-with-the-qm9-dataset-12-hrs)
     - [Reproduce paper results for *protein-conditional* small molecule generation (**Binding MOAD & CrossDocked**)](#reproduce-paper-results-for-protein-conditional-small-molecule-generation-with-the-binding-moad-and-crossdocked-datasets-binding-moad--crossdocked-5-days)
 
+- [Docker](#docker)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 - [Citation](#citation)
