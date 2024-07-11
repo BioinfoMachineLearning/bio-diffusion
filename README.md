@@ -336,19 +336,14 @@ This project is covered under the **MIT License**.
 If you use the code or data associated with this package or otherwise find this work useful, please cite:
 
 ```bibtex
-@article{Morehead2024,
-	title        = {Geometry-complete diffusion for 3D molecule generation and optimization},
-	author       = {Morehead, Alex and Cheng, Jianlin},
-	year         = 2024,
-	month        = {Jul},
-	day          = {03},
-	journal      = {Communications Chemistry},
-	volume       = 7,
-	number       = 1,
-	pages        = 150,
-	doi          = {10.1038/s42004-024-01233-z},
-	issn         = {2399-3669},
-	url          = {https://doi.org/10.1038/s42004-024-01233-z},
-	abstract     = {Generative deep learning methods have recently been proposed for generating 3D molecules using equivariant graph neural networks (GNNs) within a denoising diffusion framework. However, such methods are unable to learn important geometric properties of 3D molecules, as they adopt molecule-agnostic and non-geometric GNNs as their 3D graph denoising networks, which notably hinders their ability to generate valid large 3D molecules. In this work, we address these gaps by introducing the Geometry-Complete Diffusion Model (GCDM) for 3D molecule generation, which outperforms existing 3D molecular diffusion models by significant margins across conditional and unconditional settings for the QM9 dataset and the larger GEOM-Drugs dataset, respectively. Importantly, we demonstrate that GCDM's generative denoising process enables the model to generate a significant proportion of valid and energetically-stable large molecules at the scale of GEOM-Drugs, whereas previous methods fail to do so with the features they learn. Additionally, we show that extensions of GCDM can not only effectively design 3D molecules for specific protein pockets but can be repurposed to consistently optimize the geometry and chemical composition of existing 3D molecules for molecular stability and property specificity, demonstrating new versatility of molecular diffusion models. Code and data are freely available on GitHub.}
+@article{morehead2024geometry,
+  title={Geometry-complete diffusion for 3D molecule generation and optimization},
+  author={Morehead, Alex and Cheng, Jianlin},
+  journal={Communications Chemistry},
+  volume={7},
+  number={1},
+  pages={150},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
 }
 ```
