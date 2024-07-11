@@ -3,6 +3,12 @@ FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
 
 LABEL authors="Colby T. Ford <colby@tuple.xyz>"
 
+## Set environment variables
+ENV MPLCONFIGDIR /data/MPL_Config
+ENV TORCH_HOME /data/Torch_Home
+ENV TORCH_EXTENSIONS_DIR /data/Torch_Extensions
+ENV DEBIAN_FRONTEND noninteractive
+
 ## Install system requirements
 RUN apt update && \
     apt-get install -y --reinstall \
@@ -14,12 +20,6 @@ RUN apt update && \
         libxml2 \
         libgl-dev \
         libgl1
-
-## Set environment variables
-ENV MPLCONFIGDIR /data/MPL_Config
-ENV TORCH_HOME /data/Torch_Home
-ENV TORCH_EXTENSIONS_DIR /data/Torch_Extensions
-ENV DEBIAN_FRONTEND noninteractive
 
 ## Make directories
 RUN mkdir -p /software/
